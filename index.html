@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inmuebles disponibles — Portafolio</title>
+<meta name="description" content="Inventario de inmuebles disponibles en venta y arriendo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1>Inmuebles disponibles</h1>
+    <p>Portafolio actualizado en vivo — venta y arriendo.</p>
+  </div>
+</header>
+
+<div class="filters" id="filters">
+  <div class="filters-inner">
+    <select id="f-tipo" aria-label="Tipo de inmueble"><option value="">Todos los tipos</option></select>
+    <select id="f-barrio" aria-label="Barrio o zona"><option value="">Toda la ciudad</option></select>
+    <select id="f-servicio" aria-label="Venta o arriendo">
+      <option value="">Venta y arriendo</option>
+      <option value="venta">Solo venta</option>
+      <option value="arriendo">Solo arriendo</option>
+    </select>
+
+    <div class="filter-group">
+      <span class="filter-group-label">Precio (millones)</span>
+      <input type="number" id="f-precio-min" placeholder="Desde" min="0" inputmode="numeric" aria-label="Precio desde, en millones">
+      <span class="filter-sep">–</span>
+      <input type="number" id="f-precio-max" placeholder="Hasta" min="0" inputmode="numeric" aria-label="Precio hasta, en millones">
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-group-label">Piso</span>
+      <input type="number" id="f-piso-min" placeholder="Desde" min="0" inputmode="numeric" aria-label="Piso desde">
+      <span class="filter-sep">–</span>
+      <input type="number" id="f-piso-max" placeholder="Hasta" min="0" inputmode="numeric" aria-label="Piso hasta">
+    </div>
+
+    <select id="f-sort" aria-label="Ordenar por">
+      <option value="random">Orden aleatorio</option>
+      <option value="precio_asc">Precio: menor a mayor</option>
+      <option value="precio_desc">Precio: mayor a menor</option>
+    </select>
+
+    <button id="btn-reset" type="button" class="btn-outline">Resetear filtros</button>
+    <button id="btn-copy" type="button" class="btn-outline">Copiar enlace</button>
+
+    <span class="filters-count" id="filters-count"></span>
+  </div>
+</div>
+
+<main class="gallery-wrap">
+  <div id="gallery" class="gallery"></div>
+  <p class="empty-state" id="empty-state" hidden>
+    No encontramos inmuebles con esos filtros. Prueba ampliando el rango o usa "Resetear filtros" para ver todo el inventario.
+  </p>
+  <p class="loading-state" id="loading-state">Cargando inventario…</p>
+</main>
+
+<footer class="foot">
+  <span id="last-updated"></span>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
