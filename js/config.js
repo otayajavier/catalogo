@@ -14,4 +14,17 @@ const CONFIG = {
 
   // Cada cuánto se refresca solo (en milisegundos). 60000 = 1 minuto.
   REFRESH_INTERVAL_MS: 60000,
+
+    // Meta Pixel (opcional). Si lo dejas vacío, el sitio funciona igual sin
+  // tracking. Lo encuentras en Meta Events Manager → tu pixel → ID.
+  META_PIXEL_ID: "PEGA_AQUI_TU_PIXEL_ID",
+
+  // Número de WhatsApp CENTRAL de la inmobiliaria (no el celular de un
+  // agente en particular). Formato: código de país + número, sin "+",
+  // espacios ni guiones. Ejemplo Colombia: "573001234567".
+  WHATSAPP_NUMBER: "573164854961",
+
+  // Mensaje genérico para el botón flotante de WhatsApp (el de cada
+  // tarjeta arma su propio mensaje mencionando ese inmueble).
+  WHATSAPP_MESSAGE: "Hola, quiero más información sobre los inmuebles disponibles.",
 };
