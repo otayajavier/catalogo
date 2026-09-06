@@ -17,7 +17,7 @@ const CONFIG = {
 
     // Meta Pixel (opcional). Si lo dejas vacío, el sitio funciona igual sin
   // tracking. Lo encuentras en Meta Events Manager → tu pixel → ID.
-  META_PIXEL_ID: "PEGA_AQUI_TU_PIXEL_ID",
+  META_PIXEL_ID: "4002181883395918",
 
   // Número de WhatsApp CENTRAL de la inmobiliaria (no el celular de un
   // agente en particular). Formato: código de país + número, sin "+",
