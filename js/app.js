@@ -40,9 +40,20 @@ function whatsappMessageForListing(listing) {
 function setupWhatsappFloat() {
   const el = document.getElementById("whatsapp-float");
   if (!whatsappConfigured()) return;
-  el.href = whatsappLink(CONFIG.WHATSAPP_MESSAGE);
+  const href = whatsappLink(CONFIG.WHATSAPP_MESSAGE);
+  el.href = href;
   el.hidden = false;
-  el.addEventListener("click", () => trackPixel("Contact", { content_name: "boton_flotante" }));
+  el.addEventListener("click", (e) => fireContactAndGo(e, href, { content_name: "boton_flotante" }));
+}
+
+// Al abrir WhatsApp el celular cambia de aplicación casi de inmediato, y eso
+// puede cancelar la petición del Pixel antes de que salga. Por eso se
+// intercepta el clic, se dispara el evento, y se espera una fracción de
+// segundo antes de navegar — así el evento sí alcanza a enviarse.
+function fireContactAndGo(e, href, params) {
+  e.preventDefault();
+  trackPixel("Contact", params);
+  setTimeout(() => { window.location.href = href; }, 300);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -306,15 +317,24 @@ function renderGallery() {
 // se vuelvan a dibujar en cada refresco automático.
 function wireCardTracking() {
   document.getElementById("gallery").addEventListener("click", (e) => {
-    const el = e.target.closest(".track-view-content, .track-contact");
-    if (!el) return;
-    const params = {
-      content_name: `${el.dataset.tipo} en ${el.dataset.barrio}`,
-      value: Number(el.dataset.price) || undefined,
-      currency: "COP",
-    };
-    if (el.classList.contains("track-view-content")) trackPixel("ViewContent", params);
-    if (el.classList.contains("track-contact")) trackPixel("Contact", params);
+    const contactEl = e.target.closest(".track-contact");
+    if (contactEl) {
+      const params = {
+        content_name: `${contactEl.dataset.tipo} en ${contactEl.dataset.barrio}`,
+        value: Number(contactEl.dataset.price) || undefined,
+        currency: "COP",
+      };
+      fireContactAndGo(e, contactEl.href, params);
+      return;
+    }
+    const viewEl = e.target.closest(".track-view-content");
+    if (viewEl) {
+      trackPixel("ViewContent", {
+        content_name: `${viewEl.dataset.tipo} en ${viewEl.dataset.barrio}`,
+        value: Number(viewEl.dataset.price) || undefined,
+        currency: "COP",
+      });
+    }
   });
 }
 
