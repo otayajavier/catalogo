@@ -394,34 +394,54 @@ function syncControlsFromState() {
   document.getElementById("f-piso-min").value = filterState.pisoMin ?? "";
   document.getElementById("f-piso-max").value = filterState.pisoMax ?? "";
   document.getElementById("f-sort").value = filterState.sort;
-  updateFilterBadge();
+  updatePillStates();
 }
 
-function updateFilterBadge() {
-  const count = ["tipo", "parqueadero", "servicio", "precioMin", "precioMax", "pisoMin", "pisoMax"]
-    .filter((k) => filterState[k] !== "" && filterState[k] != null).length;
-  const badge = document.getElementById("filters-badge");
-  badge.hidden = count === 0;
-  badge.textContent = count;
+// Resalta cada "pill" cuando tiene un filtro aplicado, y actualiza el
+// texto de los pills de Precio/Piso para reflejar el rango elegido.
+function updatePillStates() {
+  ["f-tipo", "f-parqueadero", "f-servicio"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.classList.toggle("pill-active", el.value !== "");
+  });
+
+  const precioActive = filterState.precioMin != null || filterState.precioMax != null;
+  const pillPrecio = document.getElementById("pill-precio");
+  pillPrecio.classList.toggle("pill-active", precioActive);
+  pillPrecio.textContent = precioActive
+    ? `$${filterState.precioMin ?? "0"}M–${filterState.precioMax ?? "∞"}M ▾`
+    : "Precio ▾";
+
+  const pisoActive = filterState.pisoMin != null || filterState.pisoMax != null;
+  const pillPiso = document.getElementById("pill-piso");
+  pillPiso.classList.toggle("pill-active", pisoActive);
+  pillPiso.textContent = pisoActive
+    ? `Piso ${filterState.pisoMin ?? "0"}–${filterState.pisoMax ?? "∞"} ▾`
+    : "Piso ▾";
 }
 
-function toggleFiltersPanel(forceOpen) {
-  const panel = document.getElementById("filters-panel");
-  const btn = document.getElementById("btn-toggle-filters");
-  const open = forceOpen != null ? forceOpen : panel.hidden;
-  panel.hidden = !open;
-  btn.setAttribute("aria-expanded", String(open));
+// Solo un popover abierto a la vez; se cierra al elegir "Listo", al tocar
+// fuera, o al abrir el otro.
+function closeAllPopovers() {
+  document.querySelectorAll(".pill-popover").forEach((p) => { p.hidden = true; });
+  document.querySelectorAll(".pill-toggle").forEach((b) => b.setAttribute("aria-expanded", "false"));
+}
+
+function togglePopover(pillId, popoverId) {
+  const popover = document.getElementById(popoverId);
+  const wasHidden = popover.hidden;
+  closeAllPopovers();
+  popover.hidden = !wasHidden;
+  document.getElementById(pillId).setAttribute("aria-expanded", String(!wasHidden));
 }
 
 function onFilterChange() {
   updateURL();
-  updateFilterBadge();
+  updatePillStates();
   renderGallery();
 }
 
 function wireFilters() {
-  document.getElementById("btn-toggle-filters").addEventListener("click", () => toggleFiltersPanel());
-
   document.getElementById("f-tipo").addEventListener("change", (e) => { filterState.tipo = e.target.value; onFilterChange(); });
   document.getElementById("f-parqueadero").addEventListener("change", (e) => { filterState.parqueadero = e.target.value; onFilterChange(); });
   document.getElementById("f-servicio").addEventListener("change", (e) => { filterState.servicio = e.target.value; onFilterChange(); });
@@ -431,6 +451,15 @@ function wireFilters() {
   document.getElementById("f-precio-max").addEventListener("input", (e) => { filterState.precioMax = e.target.value === "" ? null : Number(e.target.value); onFilterChange(); });
   document.getElementById("f-piso-min").addEventListener("input", (e) => { filterState.pisoMin = e.target.value === "" ? null : Number(e.target.value); onFilterChange(); });
   document.getElementById("f-piso-max").addEventListener("input", (e) => { filterState.pisoMax = e.target.value === "" ? null : Number(e.target.value); onFilterChange(); });
+
+  document.getElementById("pill-precio").addEventListener("click", () => togglePopover("pill-precio", "popover-precio"));
+  document.getElementById("pill-piso").addEventListener("click", () => togglePopover("pill-piso", "popover-piso"));
+  document.querySelectorAll(".popover-done").forEach((btn) => btn.addEventListener("click", closeAllPopovers));
+
+  // Cerrar el popover abierto si se toca fuera de él
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".pill-popover-wrap")) closeAllPopovers();
+  });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
     filterState = { tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
