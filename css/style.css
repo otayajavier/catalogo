@@ -28,26 +28,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.hero {
-  padding: 64px 32px 40px;
-  text-align: left;
+.topbar {
+  padding: 14px 20px;
   border-bottom: 1px solid var(--line);
 }
-.hero-inner { max-width: 1220px; margin: 0 auto; }
 
-.hero h1 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(32px, 4vw, 46px);
-  margin: 0 0 8px;
+.topbar-title {
+  display: block;
+  max-width: 1220px;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--forest-dark);
-  letter-spacing: -0.01em;
-}
-
-.hero p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 16px;
 }
 
 .filters {
@@ -56,120 +51,142 @@ body {
   z-index: 5;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
+  padding: 12px 0 8px;
 }
 
-.filters-bar {
+.pills-row {
   max-width: 1220px;
   margin: 0 auto;
-  padding: 12px 32px;
+  padding: 0 20px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.filters-toggle {
-  display: inline-flex;
   align-items: center;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pills-row::-webkit-scrollbar { display: none; }
+
+.pill,
+.btn-outline {
+  flex: 0 0 auto;
   background: var(--card);
   border: 1px solid var(--line);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   padding: 9px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.filters-toggle:hover { border-color: var(--forest); }
-.filters-toggle:focus-visible { outline: 2px solid var(--forest); outline-offset: 1px; }
-.filters-toggle[aria-expanded="true"] { border-color: var(--forest); color: var(--forest-dark); }
-
-.filters-badge {
-  background: var(--forest);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 18px;
-  height: 18px;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
-
-.filters-panel {
-  max-width: 1220px;
-  margin: 0 auto;
-  padding: 0 32px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-.filters-panel[hidden] { display: none; }
-
-.filters select,
-.filters input,
-.btn-outline {
-  background: var(--card);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 14px;
-  padding: 9px 12px;
-  border-radius: 4px;
-}
-.filters select:focus-visible,
-.filters input:focus-visible,
+.pill:focus-visible,
 .btn-outline:focus-visible {
   outline: 2px solid var(--forest);
   outline-offset: 1px;
 }
 
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.pill-select {
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236d6759' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+}
+/* Cuando el select tiene un valor elegido (no la opción vacía), se resalta como "activo" */
+.pill-select.pill-active {
+  background-color: var(--forest);
+  border-color: var(--forest);
+  color: #fff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+.pill-popover-wrap { position: relative; }
+
+.pill-toggle.pill-active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: #fff;
+}
+
+.pill-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 10;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0 10px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
 }
+.pill-popover[hidden] { display: none; }
+
 .filter-group-label {
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
 }
-.filter-group input {
-  border: none;
-  padding: 9px 2px;
-  width: 62px;
-  background: transparent;
+
+.popover-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.filter-group input:focus-visible { outline: none; }
+.popover-row input {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 8px;
+  width: 100%;
+  background: var(--paper);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+.popover-row input:focus-visible { outline: 2px solid var(--forest); outline-offset: 1px; }
 .filter-sep { color: var(--muted); }
 
 /* Ocultar las flechitas del input number para que se vea como un campo simple */
-.filter-group input::-webkit-outer-spin-button,
-.filter-group input::-webkit-inner-spin-button {
+.popover-row input::-webkit-outer-spin-button,
+.popover-row input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-.filter-group input[type="number"] { -moz-appearance: textfield; }
+.popover-row input[type="number"] { -moz-appearance: textfield; }
+
+.popover-done {
+  align-self: flex-end;
+  background: var(--forest);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.popover-done:hover { background: var(--forest-dark); }
 
 .btn-outline {
-  cursor: pointer;
   color: var(--forest-dark);
-  font-weight: 500;
+  border-radius: 999px;
 }
 .btn-outline:hover { border-color: var(--forest); background: #fbfaf5; }
 
+.filters-meta {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 8px 20px 0;
+}
 .filters-count {
-  margin-left: auto;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -347,14 +364,5 @@ body {
 }
 
 @media (max-width: 600px) {
-  .hero { padding: 44px 20px 28px; }
-  .filters-bar { padding: 10px 20px; }
-  .filters-panel { padding: 0 20px 16px; }
   .gallery-wrap { padding: 24px 20px 40px; }
-}
-
-/* En pantallas amplias no hace falta plegar: se ve todo en una fila fija */
-@media (min-width: 860px) {
-  .filters-toggle { display: none; }
-  .filters-panel[hidden] { display: flex; }
 }
