@@ -33,16 +33,39 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
-.topbar-title {
-  display: block;
+.topbar-inner {
   max-width: 1220px;
   margin: 0 auto;
+}
+
+.topbar-title {
+  display: block;
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--forest-dark);
+}
+
+.topbar-subtitle {
+  display: none;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* En escritorio recuperamos el título grande de las versiones anteriores */
+@media (min-width: 860px) {
+  .topbar { padding: 48px 32px 30px; }
+  .topbar-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(32px, 4vw, 46px);
+    letter-spacing: -0.01em;
+    text-transform: none;
+  }
+  .topbar-subtitle { display: block; }
 }
 
 .filters {
@@ -113,9 +136,7 @@ body {
 }
 
 .pill-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  position: fixed;
   z-index: 10;
   background: var(--card);
   border: 1px solid var(--line);
