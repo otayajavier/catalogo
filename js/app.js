@@ -422,6 +422,10 @@ function updatePillStates() {
 
 // Solo un popover abierto a la vez; se cierra al elegir "Listo", al tocar
 // fuera, o al abrir el otro.
+// Los popovers usan position:fixed (no absolute) porque la fila de pills
+// tiene scroll horizontal, y eso recorta cualquier hijo posicionado de
+// forma relativa a ella. Con fixed, se calcula la posición en cada apertura
+// y no queda atrapado por el scroll del contenedor.
 function closeAllPopovers() {
   document.querySelectorAll(".pill-popover").forEach((p) => { p.hidden = true; });
   document.querySelectorAll(".pill-toggle").forEach((b) => b.setAttribute("aria-expanded", "false"));
@@ -429,10 +433,16 @@ function closeAllPopovers() {
 
 function togglePopover(pillId, popoverId) {
   const popover = document.getElementById(popoverId);
+  const pillBtn = document.getElementById(pillId);
   const wasHidden = popover.hidden;
   closeAllPopovers();
-  popover.hidden = !wasHidden;
-  document.getElementById(pillId).setAttribute("aria-expanded", String(!wasHidden));
+  if (!wasHidden) return; // ya estaba abierto: closeAllPopovers ya lo cerró
+
+  const rect = pillBtn.getBoundingClientRect();
+  popover.style.top = `${rect.bottom + 8}px`;
+  popover.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 240))}px`;
+  popover.hidden = false;
+  pillBtn.setAttribute("aria-expanded", "true");
 }
 
 function onFilterChange() {
@@ -456,10 +466,13 @@ function wireFilters() {
   document.getElementById("pill-piso").addEventListener("click", () => togglePopover("pill-piso", "popover-piso"));
   document.querySelectorAll(".popover-done").forEach((btn) => btn.addEventListener("click", closeAllPopovers));
 
-  // Cerrar el popover abierto si se toca fuera de él
+  // Cerrar el popover abierto si se toca fuera de él, o si la página o la
+  // fila de pills hacen scroll (para que no quede mal ubicado)
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".pill-popover-wrap")) closeAllPopovers();
   });
+  window.addEventListener("scroll", closeAllPopovers, true);
+  window.addEventListener("resize", closeAllPopovers);
 
   document.getElementById("btn-reset").addEventListener("click", () => {
     filterState = { tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
