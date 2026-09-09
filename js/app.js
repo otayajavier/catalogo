@@ -466,13 +466,12 @@ function wireFilters() {
   document.getElementById("pill-piso").addEventListener("click", () => togglePopover("pill-piso", "popover-piso"));
   document.querySelectorAll(".popover-done").forEach((btn) => btn.addEventListener("click", closeAllPopovers));
 
-  // Cerrar el popover abierto si se toca fuera de él, o si la página o la
-  // fila de pills hacen scroll (para que no quede mal ubicado)
+  // Cerrar el popover abierto si se toca fuera de él. (Nota: no lo cerramos
+  // al hacer scroll/resize — en mobile, abrir el teclado dispara un evento
+  // de resize y eso cerraba el popover justo al tocar un campo para escribir.)
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".pill-popover-wrap")) closeAllPopovers();
   });
-  window.addEventListener("scroll", closeAllPopovers, true);
-  window.addEventListener("resize", closeAllPopovers);
 
   document.getElementById("btn-reset").addEventListener("click", () => {
     filterState = { tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
