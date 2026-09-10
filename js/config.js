@@ -6,7 +6,7 @@ const CONFIG = {
   SPREADSHEET_ID: "180UEG3GExXiWr5VwaTQ7zMsPZuihOujym73dEijeyI4",
 
   // Tu API key de Google Cloud (Sheets API habilitada, restringida por dominio).
-  API_KEY: "PEGA_AQUI_TU_API_KEY",
+  API_KEY: "AIzaSyD9dcqg2slJPnkawSjLnLpEVdhVvmmUGrA",
 
   // Rango a leer. Si tu hoja tiene más de 500 filas, sube el número.
   // No hace falta poner el nombre de la pestaña: por defecto lee la primera.
