@@ -378,6 +378,7 @@ body {
 }
 .whatsapp-float:hover { background: #1ebc5b; }
 .whatsapp-float:focus-visible { outline: 2px solid var(--forest-dark); outline-offset: 3px; }
+.whatsapp-float[hidden] { display: none; }
 
 .empty-state,
 .loading-state {
@@ -426,6 +427,7 @@ body.no-scroll { overflow: hidden; }
   overflow-y: auto;
   padding: 0;
 }
+.detail-overlay[hidden] { display: none; }
 @media (min-width: 700px) {
   .detail-overlay { padding: 40px 20px; align-items: center; }
 }
