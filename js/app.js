@@ -96,6 +96,20 @@ const PLACEHOLDER_IMG =
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#ddd7c6"/><text x="50%" y="50%" font-family="sans-serif" font-size="16" fill="#6d6759" text-anchor="middle" dy=".3em">Sin imagen disponible</text></svg>`
   );
 
+// ID estable por inmueble (tipo+barrio+precio), usado para la URL de la
+// ficha de detalle (?ver=...) y reutilizable más adelante como el "id" del
+// catálogo de Meta. Debe calcularse igual en la fórmula del Sheet si algún
+// día se conecta ese catálogo.
+function slugify(str) {
+  return String(str || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+}
+function makeCatalogId(rawTipo, rawBarrio, rawPrecio) {
+  return slugify(`${rawTipo}-${rawBarrio}-${rawPrecio}`);
+}
+
 // ─────────────────────────────────────────────────────────────
 // Carga de datos desde Google Sheets API
 // ─────────────────────────────────────────────────────────────
@@ -138,30 +152,85 @@ function rowsToPublicListings(values) {
     credito: findCol(headers, "credito"),
     linkFicha: findCol(headers, "link", "ficha"),
     imagen: findCol(headers, "imagen"),
+    masFotos: findCol(headers, "foto"),
+    fechaVenta: findCol(headers, "fecha"),
   };
 
-  return values
+  const allRows = values
     .slice(1)
     .filter((row) => row.some((cell) => cell && cell.trim && cell.trim() !== ""))
-    .map((row) => ({
-      tipo: row[col.tipo] || "Inmueble",
-      barrio: row[col.barrio] || "Cali",
-      precio: parseCOP(row[col.precio]),
-      canon: parseCOP(row[col.canon]),
-      area: parseFloat(row[col.area]) || 0,
-      habitaciones: parseInt(row[col.habitaciones], 10) || 0,
-      banos: parseInt(row[col.banos], 10) || 0,
-      parqueadero: (row[col.parqueadero] || "").trim(),
-      piso: (row[col.piso] || "").trim(),
-      estrato: (row[col.estrato] || "").trim(),
-      estado: (row[col.estado] || "").trim(),
-      servicio: (row[col.servicio] || "").trim(),
-      credito: (row[col.credito] || "").trim().toLowerCase(),
-      linkFicha: (row[col.linkFicha] || "").trim(),
-      imagen: (row[col.imagen] || "").trim(),
-    }))
-    // Solo se listan inmuebles disponibles (si la columna Estado lo dice)
-    .filter((r) => !r.estado || r.estado.toLowerCase().includes("disponible"));
+    .map((row) => {
+      const imagenPrincipal = (row[col.imagen] || "").trim();
+      const masFotos = (row[col.masFotos] || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const photos = [imagenPrincipal, ...masFotos].filter((v, i, arr) => v && arr.indexOf(v) === i);
+
+      return {
+        catalogId: makeCatalogId(row[col.tipo], row[col.barrio], row[col.precio]),
+        tipo: row[col.tipo] || "Inmueble",
+        barrio: row[col.barrio] || "Cali",
+        precio: parseCOP(row[col.precio]),
+        canon: parseCOP(row[col.canon]),
+        area: parseFloat(row[col.area]) || 0,
+        habitaciones: parseInt(row[col.habitaciones], 10) || 0,
+        banos: parseInt(row[col.banos], 10) || 0,
+        parqueadero: (row[col.parqueadero] || "").trim(),
+        piso: (row[col.piso] || "").trim(),
+        estrato: (row[col.estrato] || "").trim(),
+        estado: (row[col.estado] || "").trim(),
+        servicio: (row[col.servicio] || "").trim(),
+        credito: (row[col.credito] || "").trim().toLowerCase(),
+        linkFicha: (row[col.linkFicha] || "").trim(),
+        imagen: imagenPrincipal,
+        photos,
+        fechaVenta: (row[col.fechaVenta] || "").trim(),
+      };
+    });
+
+  return allRows;
+}
+
+// Cuenta inmuebles marcados como "Vendido" (o "Arrendado") con Fecha Venta
+// dentro de los últimos `dias` días. Se usa para el banner de prueba social
+// — no toca la lista que se muestra en el catálogo.
+function parseFlexibleDate(str) {
+  if (!str) return null;
+  // Soporta "DD/MM/AAAA" (formato típico de Sheets en español) y formatos
+  // que Date() ya entiende (ISO, etc.)
+  const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const year = y.length === 2 ? "20" + y : y;
+    return new Date(Number(year), Number(m) - 1, Number(d));
+  }
+  const parsed = new Date(str);
+  return isNaN(parsed) ? null : parsed;
+}
+
+function countRecentSales(allRows, dias) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - dias);
+  return allRows.filter((r) => {
+    const estadoLower = r.estado.toLowerCase();
+    const esVendido = estadoLower.includes("vendido") || estadoLower.includes("arrendado");
+    if (!esVendido) return false;
+    const fecha = parseFlexibleDate(r.fechaVenta);
+    return fecha && fecha >= cutoff;
+  }).length;
+}
+
+function renderSalesBanner(allRows) {
+  const count = countRecentSales(allRows, 90);
+  const el = document.getElementById("sales-banner");
+  if (!el) return;
+  if (count > 0) {
+    el.hidden = false;
+    el.textContent = `🏠 ${count} inmueble${count === 1 ? "" : "s"} vendido${count === 1 ? "" : "s"} en los últimos 3 meses`;
+  } else {
+    el.hidden = true;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -213,26 +282,20 @@ function cardHtml(listing) {
   if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push(`Parqueadero ${escapeHtml(listing.parqueadero)}`);
   if (listing.credito === "si" || listing.credito === "sí") specs.push("Aplica crédito");
 
-  const linkHref = listing.linkFicha || "#";
-  const linkable = Boolean(listing.linkFicha);
   const waHref = whatsappConfigured() ? whatsappLink(whatsappMessageForListing(listing)) : "";
 
   return `
     <article class="card">
-      ${
-        linkable
-          ? `<a class="card-image-link track-view-content" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${escapeAttr(linkHref)}" target="_blank" rel="noopener" aria-label="Ver ficha completa de este inmueble">`
-          : `<span class="card-image-link">`
-      }
+      <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
         <img src="${escapeAttr(img)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
         <span class="card-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
-      ${linkable ? "</a>" : "</span>"}
+      </button>
       <div class="card-body">
         <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
         <h3 class="card-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h3>
         <div class="card-specs">${specs.map((s) => `<span>${s}</span>`).join("")}</div>
         <div class="card-actions">
-          ${linkable ? `<a class="card-link track-view-content" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${escapeAttr(linkHref)}" target="_blank" rel="noopener">Ver ficha completa →</a>` : ""}
+          <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa →</button>
           ${
             waHref
               ? `<a class="card-whatsapp track-contact" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${waHref}" target="_blank" rel="noopener" aria-label="Preguntar por WhatsApp sobre este inmueble">
@@ -248,8 +311,196 @@ function cardHtml(listing) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Filtros + orden + persistencia en la URL
+// Íconos (línea simple, heredan el color del texto vía currentColor)
 // ─────────────────────────────────────────────────────────────
+const ICONS = {
+  area: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+  bed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18v2M21 18v2M3 12V8a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v2"/></svg>`,
+  bath: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3ZM6 12V6a2 2 0 0 1 2-2c1 0 1.6.6 2 1M3 19h18"/></svg>`,
+  layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5"/></svg>`,
+  car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17M6 17v2M18 17v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg>`,
+  credito: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>`,
+};
+
+function detailStat(icon, value, label) {
+  if (!value) return "";
+  return `<div class="detail-stat">${ICONS[icon]}<span class="detail-stat-value">${escapeHtml(value)}</span><span class="detail-stat-label">${escapeHtml(label)}</span></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Ficha de detalle (se abre sobre la misma página, sin recargar)
+// ─────────────────────────────────────────────────────────────
+let currentDetailId = null;
+let detailInitializedFromURL = false;
+let carouselIndex = 0;
+let carouselPhotos = [];
+
+function findSimilar(listing, pool, count) {
+  return pool
+    .filter((l) => l.catalogId !== listing.catalogId && l.tipo === listing.tipo)
+    .sort((a, b) => Math.abs(priceForCard(a).amount - priceForCard(listing).amount) - Math.abs(priceForCard(b).amount - priceForCard(listing).amount))
+    .slice(0, count);
+}
+
+function miniCardHtml(listing) {
+  const img = listing.imagen || PLACEHOLDER_IMG;
+  const price = priceForCard(listing);
+  return `
+    <button type="button" class="mini-card open-detail" data-id="${escapeAttr(listing.catalogId)}">
+      <img src="${escapeAttr(img)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+      <span class="mini-card-body">
+        <strong>${formatCOP(price.amount)}</strong>
+        <span>${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</span>
+      </span>
+    </button>
+  `;
+}
+
+function renderCarousel() {
+  const track = document.getElementById("detail-carousel-track");
+  const dots = document.getElementById("detail-carousel-dots");
+  if (!track) return;
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  dots.querySelectorAll("button").forEach((d, i) => d.classList.toggle("active", i === carouselIndex));
+}
+
+function moveCarousel(delta) {
+  carouselIndex = (carouselIndex + delta + carouselPhotos.length) % carouselPhotos.length;
+  renderCarousel();
+}
+
+function detailHtml(listing) {
+  const price = priceForCard(listing);
+  const badgeClass = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "arriendo" : "venta";
+  const similares = findSimilar(listing, allListings, 2);
+
+  return `
+    <div class="detail-carousel">
+      <div class="detail-carousel-track" id="detail-carousel-track">
+        ${carouselPhotos.map((src) => `<img src="${escapeAttr(src)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" onerror="this.src='${PLACEHOLDER_IMG}'">`).join("")}
+      </div>
+      ${carouselPhotos.length > 1 ? `
+        <button type="button" class="carousel-arrow prev" id="carousel-prev" aria-label="Foto anterior">‹</button>
+        <button type="button" class="carousel-arrow next" id="carousel-next" aria-label="Foto siguiente">›</button>
+        <div class="detail-carousel-dots" id="detail-carousel-dots">
+          ${carouselPhotos.map((_, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"></button>`).join("")}
+        </div>
+      ` : ""}
+      <span class="card-badge ${badgeClass} detail-badge">${escapeHtml(listing.servicio || "Disponible")}</span>
+    </div>
+
+    <div class="detail-body">
+      <p class="detail-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
+      <h2 class="detail-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h2>
+
+      <div class="detail-stats">
+        ${detailStat("area", listing.area ? `${listing.area} m²` : "", "Área")}
+        ${detailStat("bed", listing.habitaciones || "", listing.habitaciones === 1 ? "Habitación" : "Habitaciones")}
+        ${detailStat("bath", listing.banos || "", listing.banos === 1 ? "Baño" : "Baños")}
+        ${detailStat("layers", listing.piso || "", isCasa(listing.tipo) ? "Niveles" : "Piso")}
+        ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? detailStat("car", listing.parqueadero, "Parqueadero") : ""}
+        ${listing.credito === "si" || listing.credito === "sí" ? detailStat("credito", "Sí", "Aplica crédito") : ""}
+      </div>
+
+      <div class="detail-cta">
+        ${whatsappConfigured() ? `
+          <a class="detail-whatsapp track-contact" id="detail-whatsapp-btn" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${whatsappLink(whatsappMessageForListing(listing))}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
+            Contactar por WhatsApp
+          </a>` : ""}
+        ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
+      </div>
+
+      ${similares.length ? `
+        <div class="detail-similar">
+          <h3>Inmuebles similares</h3>
+          <div class="detail-similar-grid">${similares.map(miniCardHtml).join("")}</div>
+        </div>` : ""}
+    </div>
+  `;
+}
+
+function wireDetailCarousel() {
+  const prev = document.getElementById("carousel-prev");
+  const next = document.getElementById("carousel-next");
+  if (prev) prev.addEventListener("click", () => moveCarousel(-1));
+  if (next) next.addEventListener("click", () => moveCarousel(1));
+  document.querySelectorAll("#detail-carousel-dots button").forEach((dot) => {
+    dot.addEventListener("click", () => { carouselIndex = Number(dot.dataset.i); renderCarousel(); });
+  });
+
+  // Deslizar con el dedo en mobile
+  const track = document.getElementById("detail-carousel-track");
+  if (!track) return;
+  let startX = null;
+  track.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
+  track.addEventListener("touchend", (e) => {
+    if (startX == null) return;
+    const delta = e.changedTouches[0].clientX - startX;
+    if (Math.abs(delta) > 40) moveCarousel(delta < 0 ? 1 : -1);
+    startX = null;
+  });
+}
+
+function verParamFromURL() {
+  return new URLSearchParams(window.location.search).get("ver");
+}
+
+function urlWithVer(id) {
+  const p = new URLSearchParams(window.location.search);
+  if (id) p.set("ver", id); else p.delete("ver");
+  const q = p.toString();
+  return window.location.pathname + (q ? "?" + q : "");
+}
+
+function openDetail(id, { push = true } = {}) {
+  const listing = allListings.find((l) => l.catalogId === id);
+  if (!listing) return;
+
+  currentDetailId = id;
+  carouselIndex = 0;
+  carouselPhotos = listing.photos.length ? listing.photos : [PLACEHOLDER_IMG];
+
+  const overlay = document.getElementById("detail-overlay");
+  document.getElementById("detail-content").innerHTML = detailHtml(listing);
+  overlay.hidden = false;
+  document.body.classList.add("no-scroll");
+  overlay.scrollTop = 0;
+  wireDetailCarousel();
+
+  if (push) window.history.pushState({ ver: id }, "", urlWithVer(id));
+
+  trackPixel("ViewContent", {
+    content_ids: [listing.catalogId],
+    content_type: "product",
+    content_name: `${listing.tipo} en ${listing.barrio}`,
+    value: priceForCard(listing).amount || undefined,
+    currency: "COP",
+  });
+}
+
+function closeDetail({ goBack = true } = {}) {
+  document.getElementById("detail-overlay").hidden = true;
+  document.body.classList.remove("no-scroll");
+  currentDetailId = null;
+  if (goBack && verParamFromURL()) window.history.back();
+}
+
+function wireDetailOverlay() {
+  document.getElementById("detail-close").addEventListener("click", () => closeDetail());
+  document.getElementById("detail-overlay").addEventListener("click", (e) => {
+    if (e.target.id === "detail-overlay") closeDetail();
+  });
+  document.getElementById("detail-content").addEventListener("click", handleTrackableClick);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.getElementById("detail-overlay").hidden) closeDetail();
+  });
+  window.addEventListener("popstate", () => {
+    const id = verParamFromURL();
+    if (id) openDetail(id, { push: false });
+    else closeDetail({ goBack: false });
+  });
+}
 let allListings = [];
 let filtersInitialized = false;
 let filterState = {
@@ -331,27 +582,26 @@ function renderGallery() {
 
 // Delegación de eventos: un solo listener cubre todas las tarjetas, aunque
 // se vuelvan a dibujar en cada refresco automático.
+// Un solo manejador de clics reutilizable: cubre tanto las tarjetas de la
+// galería como los elementos dentro de la ficha de detalle (el botón de
+// WhatsApp ahí, y los mini-cards de "inmuebles similares").
+function handleTrackableClick(e) {
+  const contactEl = e.target.closest(".track-contact");
+  if (contactEl) {
+    const params = {
+      content_name: `${contactEl.dataset.tipo} en ${contactEl.dataset.barrio}`,
+      value: Number(contactEl.dataset.price) || undefined,
+      currency: "COP",
+    };
+    fireContactAndGo(e, contactEl.href, params);
+    return;
+  }
+  const detailEl = e.target.closest(".open-detail");
+  if (detailEl) openDetail(detailEl.dataset.id);
+}
+
 function wireCardTracking() {
-  document.getElementById("gallery").addEventListener("click", (e) => {
-    const contactEl = e.target.closest(".track-contact");
-    if (contactEl) {
-      const params = {
-        content_name: `${contactEl.dataset.tipo} en ${contactEl.dataset.barrio}`,
-        value: Number(contactEl.dataset.price) || undefined,
-        currency: "COP",
-      };
-      fireContactAndGo(e, contactEl.href, params);
-      return;
-    }
-    const viewEl = e.target.closest(".track-view-content");
-    if (viewEl) {
-      trackPixel("ViewContent", {
-        content_name: `${viewEl.dataset.tipo} en ${viewEl.dataset.barrio}`,
-        value: Number(viewEl.dataset.price) || undefined,
-        currency: "COP",
-      });
-    }
-  });
+  document.getElementById("gallery").addEventListener("click", handleTrackableClick);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -505,9 +755,13 @@ async function loadAndRender() {
   try {
     const values = await fetchSheetData();
     if (!values) return;
-    allListings = rowsToPublicListings(values);
+    const allRows = rowsToPublicListings(values);
+    // Solo se listan inmuebles disponibles (Vendido/Arrendado no se muestran
+    // como tarjetas, pero sí cuentan para el banner de ventas recientes)
+    allListings = allRows.filter((r) => !r.estado || r.estado.toLowerCase().includes("disponible"));
 
     document.getElementById("loading-state").hidden = true;
+    renderSalesBanner(allRows);
     populateFilters(allListings);
 
     if (!filtersInitialized) {
@@ -517,6 +771,13 @@ async function loadAndRender() {
     }
 
     renderGallery();
+
+    if (!detailInitializedFromURL) {
+      const verId = verParamFromURL();
+      if (verId) openDetail(verId, { push: false });
+      detailInitializedFromURL = true;
+    }
+
     document.getElementById("last-updated").textContent =
       "Actualizado: " + new Date().toLocaleTimeString("es-CO");
   } catch (err) {
@@ -530,5 +791,6 @@ initMetaPixel();
 setupWhatsappFloat();
 wireCardTracking();
 wireFilters();
+wireDetailOverlay();
 loadAndRender();
 setInterval(loadAndRender, CONFIG.REFRESH_INTERVAL_MS);
