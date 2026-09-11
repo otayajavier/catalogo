@@ -96,18 +96,26 @@ const PLACEHOLDER_IMG =
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#ddd7c6"/><text x="50%" y="50%" font-family="sans-serif" font-size="16" fill="#6d6759" text-anchor="middle" dy=".3em">Sin imagen disponible</text></svg>`
   );
 
-// ID estable por inmueble (tipo+barrio+precio), usado para la URL de la
-// ficha de detalle (?ver=...) y reutilizable más adelante como el "id" del
-// catálogo de Meta. Debe calcularse igual en la fórmula del Sheet si algún
-// día se conecta ese catálogo.
+// ID estable por inmueble, usado para la URL de la ficha de detalle
+// (?ver=...) y reutilizable más adelante como el "id" del catálogo de
+// Meta. Se arma con tipo+barrio+precio (legible) más un hash corto del
+// link de la ficha externa (o, si no hay link, de otros datos del
+// inmueble) — así dos inmuebles que coincidan en tipo/barrio/precio/piso
+// (ej. Alheli y Tamarindo) no terminan compartiendo el mismo ID.
 function slugify(str) {
   return String(str || "")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-");
 }
-function makeCatalogId(rawTipo, rawBarrio, rawPrecio) {
-  return slugify(`${rawTipo}-${rawBarrio}-${rawPrecio}`);
+function shortHash(str) {
+  let h = 0;
+  const s = String(str || "");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
+}
+function makeCatalogId(rawTipo, rawBarrio, rawPrecio, uniqueSeed) {
+  return `${slugify(`${rawTipo}-${rawBarrio}-${rawPrecio}`)}-${shortHash(uniqueSeed)}`;
 }
 
 // ─────────────────────────────────────────────────────────────
