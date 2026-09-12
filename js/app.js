@@ -18,7 +18,17 @@ function initMetaPixel() {
 }
 
 function trackPixel(event, params) {
-  if (typeof fbq === "function") fbq("track", event, params || {});
+  if (typeof fbq === "function") fbq("track", event, params || {}, { eventID: generateEventId() });
+}
+
+// ID único por evento — necesario para que Meta pueda "deduplicar" cuando
+// el mismo evento le llega tanto desde el navegador (este código) como
+// desde su sistema de API de Conversiones del lado del servidor (que Meta
+// activa automáticamente para muchas cuentas). Sin este ID compartido,
+// Meta cuenta el mismo evento dos veces.
+function generateEventId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "ev-" + Date.now() + "-" + Math.random().toString(36).slice(2);
 }
 
 // ─────────────────────────────────────────────────────────────
