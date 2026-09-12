@@ -176,7 +176,7 @@ function rowsToPublicListings(values) {
       const photos = [imagenPrincipal, ...masFotos].filter((v, i, arr) => v && arr.indexOf(v) === i);
 
       return {
-        catalogId: makeCatalogId(row[col.tipo], row[col.barrio], row[col.precio]),
+        catalogId: makeCatalogId(row[col.tipo], row[col.barrio], row[col.precio], row[col.linkFicha]),
         tipo: row[col.tipo] || "Inmueble",
         barrio: row[col.barrio] || "Cali",
         precio: parseCOP(row[col.precio]),
@@ -461,7 +461,7 @@ function urlWithVer(id) {
   return window.location.pathname + (q ? "?" + q : "");
 }
 
-function openDetail(id, { push = true } = {}) {
+function openDetail(id, { mode = "push" } = {}) {
   const listing = allListings.find((l) => l.catalogId === id);
   if (!listing) return;
 
@@ -476,7 +476,14 @@ function openDetail(id, { push = true } = {}) {
   overlay.scrollTop = 0;
   wireDetailCarousel();
 
-  if (push) window.history.pushState({ ver: id }, "", urlWithVer(id));
+  // "push" solo se usa al abrir desde el catálogo (agrega una entrada al
+  // historial, así "atrás" cierra la ficha). Al navegar a un "inmueble
+  // similar" desde dentro de una ficha ya abierta usamos "replace" para no
+  // apilar entradas — así un solo "atrás" siempre vuelve al catálogo, sin
+  // importar cuántos sugeridos haya visto la persona. "none" se usa cuando
+  // el cambio de URL ya ocurrió por otro lado (ej. al recibir un popstate).
+  if (mode === "push") window.history.pushState({ ver: id }, "", urlWithVer(id));
+  else if (mode === "replace") window.history.replaceState({ ver: id }, "", urlWithVer(id));
 
   trackPixel("ViewContent", {
     content_ids: [listing.catalogId],
@@ -505,7 +512,7 @@ function wireDetailOverlay() {
   });
   window.addEventListener("popstate", () => {
     const id = verParamFromURL();
-    if (id) openDetail(id, { push: false });
+    if (id) openDetail(id, { mode: "none" });
     else closeDetail({ goBack: false });
   });
 }
@@ -605,7 +612,13 @@ function handleTrackableClick(e) {
     return;
   }
   const detailEl = e.target.closest(".open-detail");
-  if (detailEl) openDetail(detailEl.dataset.id);
+  if (detailEl) {
+    // Si el clic viene de un "inmueble similar" dentro de una ficha ya
+    // abierta, reemplazamos esa entrada del historial en vez de apilar una
+    // nueva — así "atrás" siempre vuelve directo al catálogo.
+    const yaHayFichaAbierta = e.target.closest("#detail-overlay");
+    openDetail(detailEl.dataset.id, { mode: yaHayFichaAbierta ? "replace" : "push" });
+  }
 }
 
 function wireCardTracking() {
@@ -782,7 +795,14 @@ async function loadAndRender() {
 
     if (!detailInitializedFromURL) {
       const verId = verParamFromURL();
-      if (verId) openDetail(verId, { push: false });
+      if (verId) {
+        // Si alguien entra directo con un link compartido (?ver=...), no
+        // hay ningún "catálogo" antes en el historial de este navegador —
+        // sin este paso, "atrás" o "cerrar" sacarían a la persona del sitio
+        // en vez de mostrarle el catálogo. Anclamos el catálogo primero.
+        window.history.replaceState(null, "", urlWithVer(null));
+        openDetail(verId, { mode: "push" });
+      }
       detailInitializedFromURL = true;
     }
 
