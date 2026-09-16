@@ -1,0 +1,69 @@
+.solicitudes-wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+.solicitudes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.solicitud-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solicitud-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #fff;
+}
+.solicitud-tag.arriendo { background: #8a5a2e; }
+
+.solicitud-titulo {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--ink);
+  margin: 0;
+}
+
+.solicitud-precio {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--forest-dark);
+  margin: 0;
+}
+
+.solicitud-detalle {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.solicitud-copy {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--forest);
+  cursor: pointer;
+  text-align: left;
+}
+.solicitud-copy:hover { color: var(--forest-dark); }
