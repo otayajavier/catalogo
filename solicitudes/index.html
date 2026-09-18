@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=2">
+<link rel="stylesheet" href="../css/style.css?v=3">
 <link rel="stylesheet" href="solicitudes.css?v=1">
 </head>
 <body>
@@ -22,9 +22,36 @@
   </div>
 </header>
 
+<p class="sales-banner" id="solicitudes-banner" hidden></p>
+
+<div class="filters" id="filters">
+  <div class="pills-row" id="pills-row">
+    <div class="pill-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="s-search" placeholder="Buscar (zona, observaciones...)" aria-label="Buscar en las solicitudes">
+    </div>
+    <select id="s-forma-pago" class="pill pill-select" aria-label="Forma de pago"><option value="">Forma de pago</option></select>
+
+    <div class="pill-popover-wrap">
+      <button type="button" class="pill pill-toggle" id="pill-presupuesto" aria-haspopup="true" aria-expanded="false">Presupuesto ▾</button>
+      <div class="pill-popover" id="popover-presupuesto" hidden>
+        <span class="filter-group-label">Presupuesto (millones)</span>
+        <div class="popover-row">
+          <input type="number" id="s-presupuesto-min" placeholder="Desde" min="0" inputmode="numeric">
+          <span class="filter-sep">–</span>
+          <input type="number" id="s-presupuesto-max" placeholder="Hasta" min="0" inputmode="numeric">
+        </div>
+        <button type="button" class="popover-done">Listo</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn-outline" id="s-reset">Resetear</button>
+  </div>
+</div>
+
 <main class="solicitudes-wrap">
   <div id="solicitudes-grid" class="solicitudes-grid"></div>
-  <p class="empty-state" id="solicitudes-empty" hidden>No hay solicitudes activas en este momento.</p>
+  <p class="empty-state" id="solicitudes-empty" hidden>No hay solicitudes que coincidan con esa búsqueda.</p>
   <p class="loading-state" id="solicitudes-loading">Cargando solicitudes…</p>
 </main>
 
@@ -35,7 +62,7 @@
 </a>
 
 <script src="../js/config.js?v=2"></script>
-<script src="../js/nav.js?v=1"></script>
-<script src="solicitudes.js?v=1"></script>
+<script src="../js/nav.js?v=2"></script>
+<script src="solicitudes.js?v=2"></script>
 </body>
 </html>

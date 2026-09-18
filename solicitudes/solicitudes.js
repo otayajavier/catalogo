@@ -102,16 +102,26 @@ function cardHtml(s, i) {
   `;
 }
 
+function emojiFormaPago(formaPago) {
+  const f = (formaPago || "").toLowerCase();
+  if (f.includes("credito") || f.includes("crédito")) return "💳";
+  if (f.includes("contado")) return "💵";
+  return "";
+}
+
 function whatsappTextFor(s) {
   const lineas = [
     `Busco 🔍${s.tipo.toUpperCase()} para COMPRA:`,
     "",
     `•⁠ Sector: ${s.barrios || s.zona || "Cualquiera"}`,
   ];
-  if (s.formaPago) lineas.push(`•⁠ ${s.formaPago}${s.entidad ? " " + s.entidad : ""}`);
+  if (s.formaPago) lineas.push(`•⁠ ${s.formaPago}${s.entidad ? " " + s.entidad : ""} ${emojiFormaPago(s.formaPago)}`.trim());
   if (s.observaciones) lineas.push(`•⁠ ${s.observaciones}`);
   lineas.push("");
   if (s.presupuesto) lineas.push(`Precio: $${s.presupuesto} millones.`);
+  lineas.push("");
+  lineas.push("Ver más solicitudes");
+  lineas.push(`👉 https://otayajavier.github.io/catalogo/solicitudes/`);
   return lineas.join("\n");
 }
 
@@ -120,51 +130,122 @@ function mensajeTengoInmueble(s) {
 }
 
 let solicitudesData = [];
+let filterState = { search: "", formaPago: "", presupuestoMin: null, presupuestoMax: null };
+
+function fillSelect(id, values, placeholder) {
+  const el = document.getElementById(id);
+  const current = el.value;
+  el.innerHTML = `<option value="">${placeholder}</option>` + values.map((v) => `<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join("");
+  if (values.includes(current)) el.value = current;
+}
+
+function applyFilters(data) {
+  return data.filter((s) => {
+    if (filterState.formaPago && s.formaPago !== filterState.formaPago) return false;
+    if (filterState.presupuestoMin != null && s.presupuesto < filterState.presupuestoMin) return false;
+    if (filterState.presupuestoMax != null && s.presupuesto > filterState.presupuestoMax) return false;
+    if (filterState.search) {
+      const hay = `${s.tipo} ${s.barrios} ${s.zona} ${s.formaPago} ${s.entidad} ${s.observaciones}`.toLowerCase();
+      if (!hay.includes(filterState.search.toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+function renderSolicitudes() {
+  const filtradas = applyFilters(solicitudesData);
+  const grid = document.getElementById("solicitudes-grid");
+  grid.innerHTML = filtradas.map((s) => cardHtml(s, solicitudesData.indexOf(s))).join("");
+  document.getElementById("solicitudes-empty").hidden = filtradas.length > 0;
+  wireCardButtons(grid);
+
+  const banner = document.getElementById("solicitudes-banner");
+  banner.hidden = false;
+  banner.textContent = `🔍 ${solicitudesData.length} solicitud${solicitudesData.length === 1 ? "" : "es"} habilitada${solicitudesData.length === 1 ? "" : "s"}${filtradas.length !== solicitudesData.length ? ` — ${filtradas.length} coinciden con tu búsqueda` : ""}`;
+}
+
+function wireCardButtons(grid) {
+  grid.querySelectorAll(".solicitud-copy").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const texto = whatsappTextFor(solicitudesData[Number(btn.dataset.i)]);
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch {
+        const tmp = document.createElement("textarea");
+        tmp.value = texto;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand("copy");
+        document.body.removeChild(tmp);
+      }
+      const original = btn.textContent;
+      btn.textContent = "¡Copiado!";
+      setTimeout(() => { btn.textContent = original; }, 1800);
+    });
+  });
+
+  grid.querySelectorAll(".solicitud-whatsapp").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const s = solicitudesData[Number(link.dataset.i)];
+      trackPixel("Contact", {
+        content_name: `${link.dataset.tipo} en ${link.dataset.barrio}`,
+        value: Number(link.dataset.price) || undefined,
+        currency: "COP",
+      });
+      const href = whatsappConfigured()
+        ? `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(mensajeTengoInmueble(s))}`
+        : "#";
+      setTimeout(() => { window.location.href = href; }, 300);
+    });
+  });
+}
+
+function closeAllPopovers() {
+  document.querySelectorAll(".pill-popover").forEach((p) => { p.hidden = true; });
+  document.querySelectorAll(".pill-toggle").forEach((b) => b.setAttribute("aria-expanded", "false"));
+}
+
+function togglePopover(pillId, popoverId) {
+  const popover = document.getElementById(popoverId);
+  const pillBtn = document.getElementById(pillId);
+  const wasHidden = popover.hidden;
+  closeAllPopovers();
+  if (!wasHidden) return;
+  const rect = pillBtn.getBoundingClientRect();
+  popover.style.top = `${rect.bottom + 8}px`;
+  popover.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 240))}px`;
+  popover.hidden = false;
+  pillBtn.setAttribute("aria-expanded", "true");
+}
+
+function wireFilters() {
+  document.getElementById("s-search").addEventListener("input", (e) => { filterState.search = e.target.value; renderSolicitudes(); });
+  document.getElementById("s-forma-pago").addEventListener("change", (e) => { filterState.formaPago = e.target.value; renderSolicitudes(); });
+  document.getElementById("s-presupuesto-min").addEventListener("input", (e) => { filterState.presupuestoMin = e.target.value === "" ? null : Number(e.target.value); renderSolicitudes(); });
+  document.getElementById("s-presupuesto-max").addEventListener("input", (e) => { filterState.presupuestoMax = e.target.value === "" ? null : Number(e.target.value); renderSolicitudes(); });
+  document.getElementById("pill-presupuesto").addEventListener("click", () => togglePopover("pill-presupuesto", "popover-presupuesto"));
+  document.querySelectorAll(".popover-done").forEach((btn) => btn.addEventListener("click", closeAllPopovers));
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".pill-popover-wrap")) closeAllPopovers();
+  });
+  document.getElementById("s-reset").addEventListener("click", () => {
+    filterState = { search: "", formaPago: "", presupuestoMin: null, presupuestoMax: null };
+    document.getElementById("s-search").value = "";
+    document.getElementById("s-forma-pago").value = "";
+    document.getElementById("s-presupuesto-min").value = "";
+    document.getElementById("s-presupuesto-max").value = "";
+    renderSolicitudes();
+  });
+}
 
 async function cargarSolicitudes() {
   try {
     const values = await fetchSolicitudes();
     solicitudesData = rowsToSolicitudes(values);
     document.getElementById("solicitudes-loading").hidden = true;
-
-    const grid = document.getElementById("solicitudes-grid");
-    grid.innerHTML = solicitudesData.map(cardHtml).join("");
-    document.getElementById("solicitudes-empty").hidden = solicitudesData.length > 0;
-
-    grid.querySelectorAll(".solicitud-copy").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const texto = whatsappTextFor(solicitudesData[Number(btn.dataset.i)]);
-        try {
-          await navigator.clipboard.writeText(texto);
-        } catch {
-          const tmp = document.createElement("textarea");
-          tmp.value = texto;
-          document.body.appendChild(tmp);
-          tmp.select();
-          document.execCommand("copy");
-          document.body.removeChild(tmp);
-        }
-        const original = btn.textContent;
-        btn.textContent = "¡Copiado!";
-        setTimeout(() => { btn.textContent = original; }, 1800);
-      });
-    });
-
-    grid.querySelectorAll(".solicitud-whatsapp").forEach((link) => {
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const s = solicitudesData[Number(link.dataset.i)];
-        trackPixel("Contact", {
-          content_name: `${link.dataset.tipo} en ${link.dataset.barrio}`,
-          value: Number(link.dataset.price) || undefined,
-          currency: "COP",
-        });
-        const href = whatsappConfigured()
-          ? `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(mensajeTengoInmueble(s))}`
-          : "#";
-        setTimeout(() => { window.location.href = href; }, 300);
-      });
-    });
+    fillSelect("s-forma-pago", [...new Set(solicitudesData.map((s) => s.formaPago).filter(Boolean))].sort(), "Forma de pago");
+    renderSolicitudes();
   } catch (err) {
     console.error(err);
     document.getElementById("solicitudes-loading").hidden = false;
@@ -207,5 +288,6 @@ function setupWhatsappFloat() {
 
 initMetaPixelIfConfigured();
 setupWhatsappFloat();
+wireFilters();
 cargarSolicitudes();
 setInterval(cargarSolicitudes, CONFIG.REFRESH_INTERVAL_MS || 60000);
