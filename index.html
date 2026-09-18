@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 
@@ -25,6 +25,10 @@
 
 <div class="filters" id="filters">
   <div class="pills-row" id="pills-row">
+    <div class="pill-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="f-search" placeholder="Buscar..." aria-label="Buscar por tipo, barrio o parqueadero">
+    </div>
     <select id="f-tipo" class="pill pill-select" aria-label="Tipo de inmueble"><option value="">Tipo</option></select>
     <select id="f-parqueadero" class="pill pill-select" aria-label="Parqueadero"><option value="">Parqueadero</option></select>
     <select id="f-servicio" class="pill pill-select" aria-label="Venta o arriendo">
@@ -99,7 +103,7 @@
 </div>
 
 <script src="js/config.js?v=2"></script>
-<script src="js/nav.js?v=1"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/nav.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

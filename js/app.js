@@ -42,9 +42,13 @@ function whatsappLink(message) {
   return `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function whatsappMessageForListing(listing) {
+function whatsappMessageForListing(listing, incluirLink) {
   const price = formatCOP(priceForCard(listing).amount);
-  return `Hola, quiero más información sobre este ${listing.tipo} en ${listing.barrio} (${price}).`;
+  let msg = `Hola, quiero más información sobre este ${listing.tipo} en ${listing.barrio} (${price}).`;
+  if (incluirLink) {
+    msg += ` Lo vi aquí: ${window.location.origin}${urlWithVer(listing.catalogId)}`;
+  }
+  return msg;
 }
 
 function setupWhatsappFloat() {
@@ -422,7 +426,7 @@ function detailHtml(listing) {
 
       <div class="detail-cta">
         ${whatsappConfigured() ? `
-          <a class="detail-whatsapp track-contact" id="detail-whatsapp-btn" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${whatsappLink(whatsappMessageForListing(listing))}" target="_blank" rel="noopener">
+          <a class="detail-whatsapp track-contact" id="detail-whatsapp-btn" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${whatsappLink(whatsappMessageForListing(listing, true))}" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
             Quiero conocer este inmueble
           </a>` : ""}
@@ -529,7 +533,7 @@ function wireDetailOverlay() {
 let allListings = [];
 let filtersInitialized = false;
 let filterState = {
-  tipo: "", parqueadero: "", servicio: "",
+  search: "", tipo: "", parqueadero: "", servicio: "",
   precioMin: null, precioMax: null,
   pisoMin: null, pisoMax: null,
   sort: "random",
@@ -576,8 +580,15 @@ function matchesPisoRange(listing) {
   return true;
 }
 
+function matchesSearch(listing) {
+  if (!filterState.search) return true;
+  const haystack = `${listing.tipo} ${listing.barrio} ${listing.parqueadero} ${listing.servicio} ${listing.estado}`.toLowerCase();
+  return haystack.includes(filterState.search.toLowerCase());
+}
+
 function applyFilters(listings) {
   return listings.filter((l) => {
+    if (!matchesSearch(l)) return false;
     if (filterState.tipo && l.tipo !== filterState.tipo) return false;
     if (filterState.parqueadero && l.parqueadero !== filterState.parqueadero) return false;
     if (filterState.servicio === "venta" && !isVenta(l.servicio)) return false;
@@ -640,6 +651,7 @@ function wireCardTracking() {
 // ─────────────────────────────────────────────────────────────
 function readFiltersFromURL() {
   const p = new URLSearchParams(window.location.search);
+  filterState.search = p.get("q") || "";
   filterState.tipo = p.get("tipo") || "";
   filterState.parqueadero = p.get("parqueadero") || "";
   filterState.servicio = p.get("servicio") || "";
@@ -652,6 +664,7 @@ function readFiltersFromURL() {
 
 function updateURL() {
   const p = new URLSearchParams();
+  if (filterState.search) p.set("q", filterState.search);
   if (filterState.tipo) p.set("tipo", filterState.tipo);
   if (filterState.parqueadero) p.set("parqueadero", filterState.parqueadero);
   if (filterState.servicio) p.set("servicio", filterState.servicio);
@@ -667,6 +680,7 @@ function updateURL() {
 }
 
 function syncControlsFromState() {
+  document.getElementById("f-search").value = filterState.search;
   document.getElementById("f-tipo").value = filterState.tipo;
   document.getElementById("f-parqueadero").value = filterState.parqueadero;
   document.getElementById("f-servicio").value = filterState.servicio;
@@ -733,6 +747,7 @@ function onFilterChange() {
 }
 
 function wireFilters() {
+  document.getElementById("f-search").addEventListener("input", (e) => { filterState.search = e.target.value; onFilterChange(); });
   document.getElementById("f-tipo").addEventListener("change", (e) => { filterState.tipo = e.target.value; onFilterChange(); });
   document.getElementById("f-parqueadero").addEventListener("change", (e) => { filterState.parqueadero = e.target.value; onFilterChange(); });
   document.getElementById("f-servicio").addEventListener("change", (e) => { filterState.servicio = e.target.value; onFilterChange(); });
@@ -755,7 +770,7 @@ function wireFilters() {
   });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
-    filterState = { tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
+    filterState = { search: "", tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
     syncControlsFromState();
     onFilterChange();
   });

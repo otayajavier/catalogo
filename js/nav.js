@@ -49,6 +49,16 @@ function renderSiteNav() {
   toggle.addEventListener("click", () => (panel.hidden ? abrir() : cerrar()));
   backdrop.addEventListener("click", cerrar);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrar(); });
+
+  // Se oculta al bajar (para no tapar filtros pegados arriba) y reaparece
+  // al subir, o cerca del tope de la página.
+  let lastY = window.scrollY;
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY;
+    if (y > lastY && y > 80) toggle.classList.add("site-nav-toggle-hidden");
+    else toggle.classList.remove("site-nav-toggle-hidden");
+    lastY = y;
+  }, { passive: true });
 }
 
 renderSiteNav();
