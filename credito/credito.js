@@ -38,15 +38,30 @@ function cuotaMensual(monto, tasaEA, plazoAnios) {
   return (monto * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
 }
 
+// Formatea con puntos de miles mientras la persona escribe (ej. "225000000"
+// se ve como "225.000.000"), para que sea más fácil leer el número que se
+// está escribiendo. El campo queda como texto; se limpia al leerlo.
+function formatearNumeroInput(el) {
+  el.addEventListener("input", () => {
+    const soloDigitos = el.value.replace(/\D/g, "");
+    el.value = soloDigitos ? Number(soloDigitos).toLocaleString("es-CO") : "";
+  });
+}
+
+function leerNumeroFormateado(id) {
+  const raw = document.getElementById(id).value.replace(/\D/g, "");
+  return Number(raw) || 0;
+}
+
 function leerFormulario() {
   return {
-    valor: Number(document.getElementById("c-valor").value) || 0,
+    valor: leerNumeroFormateado("c-valor"),
     tipoVivienda: document.querySelector('input[name="tipoVivienda"]:checked').value,
     cuotaInicialPct: Number(document.getElementById("c-cuota-inicial").value) || 0,
     plazo: Number(document.getElementById("c-plazo").value) || 20,
     tasa: Number(document.getElementById("c-tasa").value) || 0,
     tipoTrabajador: document.querySelector('input[name="tipoTrabajador"]:checked').value,
-    ingreso: Number(document.getElementById("c-ingreso").value) || 0,
+    ingreso: leerNumeroFormateado("c-ingreso"),
   };
 }
 
@@ -135,6 +150,9 @@ function wireForm() {
   form.addEventListener("input", calcularYRenderizar);
   form.addEventListener("change", calcularYRenderizar);
 
+  formatearNumeroInput(document.getElementById("c-valor"));
+  formatearNumeroInput(document.getElementById("c-ingreso"));
+
   document.getElementById("c-plazo").addEventListener("input", (e) => {
     document.getElementById("c-plazo-value").textContent = e.target.value;
   });
@@ -152,7 +170,7 @@ function precargarDesdeURL() {
   const p = new URLSearchParams(window.location.search);
   const valor = p.get("valor");
   if (valor) {
-    document.getElementById("c-valor").value = valor;
+    document.getElementById("c-valor").value = Number(valor).toLocaleString("es-CO");
     preseleccionarTipoVivienda(Number(valor));
   }
 }
