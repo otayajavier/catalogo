@@ -63,6 +63,16 @@ function calcularYRenderizar() {
   const d = leerFormulario();
   actualizarTagAutomatico(d.valor);
 
+  const emptyState = document.getElementById("credito-empty-state");
+  const resultContent = document.getElementById("credito-resultado-content");
+  if (d.valor <= 0) {
+    emptyState.hidden = false;
+    resultContent.hidden = true;
+    return;
+  }
+  emptyState.hidden = true;
+  resultContent.hidden = false;
+
   const cuotaInicialValor = d.valor * (d.cuotaInicialPct / 100);
   const montoFinanciar = Math.max(0, d.valor - cuotaInicialValor);
   const cuota = cuotaMensual(montoFinanciar, d.tasa, d.plazo);

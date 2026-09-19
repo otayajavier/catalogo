@@ -17,10 +17,50 @@
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 24px;
+  padding: 4px 24px 24px;
 }
-.credito-form .lead-label { margin-top: 16px; }
-.credito-form .lead-label:first-child { margin-top: 0; }
+
+.credito-section { padding-top: 22px; }
+.credito-section + .credito-section { border-top: 1px solid var(--line); margin-top: 4px; }
+.credito-section-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--forest-dark);
+  margin: 0 0 16px;
+}
+
+.credito-form .lead-label { margin-top: 16px; display: block; }
+.credito-form .lead-label:first-of-type { margin-top: 0; }
+
+.credito-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.credito-input-icon {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.credito-input-icon span {
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.credito-input-icon .lead-input {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+.credito-input-icon:focus-within { outline: 2px solid var(--forest); outline-offset: 1px; }
+.credito-input-icon.suffix span { border-left: 1px solid var(--line); }
 
 .credito-tipo-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
 .credito-auto-tag {
@@ -32,20 +72,102 @@
   color: #fff;
 }
 
-.credito-radio-group {
+/* Controles tipo "segmentado" (dos opciones, se ven como botones) */
+.segmented {
   display: flex;
-  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--paper);
   margin-top: 6px;
-  font-size: 14px;
+  position: relative;
 }
-.credito-radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.segmented-input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.segmented-label {
+  flex: 1;
+  text-align: center;
+  padding: 9px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.segmented-input:checked + .segmented-label {
+  background: var(--forest);
+  color: #fff;
+}
+.segmented-input:focus-visible + .segmented-label {
+  outline: 2px solid var(--forest);
+  outline-offset: 1px;
+}
+
+/* Slider de plazo, personalizado */
+.credito-slider {
+  width: 100%;
+  margin-top: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  outline: none;
+}
+.credito-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--forest);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--forest);
+  cursor: pointer;
+}
+.credito-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--forest);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--forest);
+  cursor: pointer;
+}
+.credito-slider::-moz-range-track { background: var(--line); height: 6px; border-radius: 999px; }
 
 .credito-range-value {
   text-align: center;
   font-family: var(--font-display);
   color: var(--forest-dark);
   font-size: 15px;
-  margin: 4px 0 0;
+  margin: 6px 0 0;
+}
+
+/* Caja informativa (reemplaza el texto suelto de "hint") */
+.info-banner {
+  margin-top: 14px;
+  background: #eef1e6;
+  border: 1px solid #d7e0cd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--forest-dark);
+  line-height: 1.5;
+}
+.info-banner.subtle {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--muted);
+  padding: 16px 0 0;
+  margin-top: 28px;
+  font-size: 12px;
 }
 
 .credito-resultado {
@@ -56,6 +178,16 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-height: 220px;
+}
+
+.credito-empty-state {
+  margin: auto;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 32ch;
+  line-height: 1.6;
 }
 
 .credito-cuota-box {
@@ -87,12 +219,3 @@
 
 .credito-docs h3 { font-size: 14px; margin: 0 0 8px; color: var(--ink); }
 .credito-docs ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); line-height: 1.7; }
-
-.credito-disclaimer {
-  margin-top: 28px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-}
