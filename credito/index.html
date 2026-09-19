@@ -54,6 +54,7 @@
               <input class="lead-input" type="number" id="c-cuota-inicial" value="20" min="0" max="90">
               <span>%</span>
             </div>
+            <p class="lead-hint" id="credito-cuota-minima-hint"></p>
           </div>
           <div>
             <label class="lead-label" for="c-tasa">Tasa de interés</label>
@@ -93,6 +94,7 @@
 
     <div class="credito-resultado">
       <p class="credito-empty-state" id="credito-empty-state">Completa el valor del inmueble y tu ingreso mensual para ver tu estimado.</p>
+      <p class="credito-cumplimiento no-ok" id="credito-cuota-bloqueo" hidden></p>
 
       <div id="credito-resultado-content" hidden>
         <div class="credito-cuota-box">
@@ -130,6 +132,6 @@
 
 <script src="../js/config.js?v=2"></script>
 <script src="../js/nav.js?v=2"></script>
-<script src="credito.js?v=4"></script>
+<script src="credito.js?v=5"></script>
 </body>
 </html>

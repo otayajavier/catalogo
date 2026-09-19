@@ -6,6 +6,7 @@ const SMMLV_2026 = 1750905;
 const TOPE_VIS_CALI = 150 * SMMLV_2026;   // $262.635.750 — Cali es "ciudad principal"
 const TOPE_VIP = 90 * SMMLV_2026;          // $157.581.450
 const LIMITE_CUOTA_INGRESO = { vis: 0.40, novis: 0.30 }; // Ley de Vivienda
+const CUOTA_INICIAL_MINIMA = { vis: 20, novis: 30 }; // % mínimo exigido por tipo de vivienda
 
 const DOCS_EMPLEADO = [
   "Cédula de ciudadanía (ampliada al 150%)",
@@ -74,18 +75,42 @@ function actualizarTagAutomatico(valor) {
   else tag.textContent = "Por precio, sería No VIS";
 }
 
+function aplicarMinimoCuotaInicial() {
+  const tipo = document.querySelector('input[name="tipoVivienda"]:checked').value;
+  const minimo = CUOTA_INICIAL_MINIMA[tipo];
+  document.getElementById("credito-cuota-minima-hint").textContent =
+    `Mínimo exigido para ${tipo === "vis" ? "VIS/VIP" : "No VIS"}: ${minimo}%`;
+
+  const campo = document.getElementById("c-cuota-inicial");
+  if (Number(campo.value) < minimo) campo.value = minimo;
+}
+
 function calcularYRenderizar() {
   const d = leerFormulario();
   actualizarTagAutomatico(d.valor);
 
   const emptyState = document.getElementById("credito-empty-state");
   const resultContent = document.getElementById("credito-resultado-content");
+  const bloqueo = document.getElementById("credito-cuota-bloqueo");
+
   if (d.valor <= 0) {
     emptyState.hidden = false;
     resultContent.hidden = true;
+    bloqueo.hidden = true;
     return;
   }
   emptyState.hidden = true;
+
+  // No se calcula nada si la cuota inicial no cumple el mínimo exigido para
+  // el tipo de vivienda — mostrar un número ahí sería engañoso.
+  const minimoActual = CUOTA_INICIAL_MINIMA[d.tipoVivienda];
+  if (d.cuotaInicialPct < minimoActual) {
+    resultContent.hidden = true;
+    bloqueo.hidden = false;
+    bloqueo.textContent = `⚠️ La cuota inicial mínima para vivienda ${d.tipoVivienda === "vis" ? "VIS/VIP" : "No VIS"} es ${minimoActual}%. Ajusta el valor para ver el cálculo.`;
+    return;
+  }
+  bloqueo.hidden = true;
   resultContent.hidden = false;
 
   const cuotaInicialValor = d.valor * (d.cuotaInicialPct / 100);
@@ -138,6 +163,7 @@ function preseleccionarTipoVivienda(valor) {
   if (valor <= TOPE_VIS_CALI) document.getElementById("c-vis").checked = true;
   else document.getElementById("c-novis").checked = true;
   actualizarTasaSugerida();
+  aplicarMinimoCuotaInicial();
 }
 
 function actualizarTasaSugerida() {
@@ -157,12 +183,15 @@ function wireForm() {
     document.getElementById("c-plazo-value").textContent = e.target.value;
   });
 
-  document.getElementById("c-valor").addEventListener("input", (e) => {
-    preseleccionarTipoVivienda(Number(e.target.value) || 0);
+  document.getElementById("c-valor").addEventListener("input", () => {
+    preseleccionarTipoVivienda(leerNumeroFormateado("c-valor"));
   });
 
   document.querySelectorAll('input[name="tipoVivienda"]').forEach((r) => {
-    r.addEventListener("change", actualizarTasaSugerida);
+    r.addEventListener("change", () => {
+      actualizarTasaSugerida();
+      aplicarMinimoCuotaInicial();
+    });
   });
 }
 
@@ -194,4 +223,5 @@ function initMetaPixelIfConfigured() {
 initMetaPixelIfConfigured();
 wireForm();
 precargarDesdeURL();
+aplicarMinimoCuotaInicial();
 calcularYRenderizar();
