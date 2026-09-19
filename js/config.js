@@ -24,7 +24,7 @@ const CONFIG = {
   // Número de WhatsApp CENTRAL de la inmobiliaria (no el celular de un
   // agente en particular). Formato: código de país + número, sin "+",
   // espacios ni guiones. Ejemplo Colombia: "573001234567".
-  WHATSAPP_NUMBER: "P573164854961",
+  WHATSAPP_NUMBER: "573164854961",
 
   // Mensaje genérico para el botón flotante de WhatsApp (el de cada
   // tarjeta arma su propio mensaje mencionando ese inmueble).
