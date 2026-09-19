@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de crédito de vivienda — Cali</title>
+<meta name="description" content="Calcula tu cuota mensual estimada, si cumples la Ley de Vivienda, y qué documentos necesitas según tu tipo de ingresos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css?v=3">
+<link rel="stylesheet" href="credito.css?v=1">
+</head>
+<body>
+
+<div id="site-nav-root"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="topbar-title">Calculadora de crédito de vivienda</span>
+    <p class="topbar-subtitle">Una estimación rápida — no reemplaza el estudio real de un banco.</p>
+  </div>
+</header>
+
+<main class="credito-wrap">
+  <div class="credito-grid">
+
+    <form class="credito-form" id="credito-form">
+      <label class="lead-label" for="c-valor">Valor del inmueble (COP)</label>
+      <input class="lead-input" type="number" id="c-valor" placeholder="Ej: 225000000" min="0" inputmode="numeric">
+
+      <div class="credito-tipo-row">
+        <label class="lead-label" style="margin:0;">Tipo de vivienda</label>
+        <span class="credito-auto-tag" id="credito-auto-tag" hidden></span>
+      </div>
+      <div class="credito-radio-group">
+        <label><input type="radio" name="tipoVivienda" value="vis" id="c-vis"> VIS / VIP</label>
+        <label><input type="radio" name="tipoVivienda" value="novis" id="c-novis" checked> No VIS</label>
+      </div>
+
+      <label class="lead-label" for="c-cuota-inicial">Cuota inicial (%)</label>
+      <input class="lead-input" type="number" id="c-cuota-inicial" value="20" min="0" max="90">
+
+      <label class="lead-label" for="c-plazo">Plazo (años)</label>
+      <input class="lead-input" type="range" id="c-plazo" min="5" max="30" value="20" step="1">
+      <p class="credito-range-value"><span id="c-plazo-value">20</span> años</p>
+
+      <label class="lead-label" for="c-tasa">Tasa de interés (E.A. %)</label>
+      <input class="lead-input" type="number" id="c-tasa" value="14" min="0" max="30" step="0.1">
+      <p class="lead-hint">Referencia 2026: ~12-13% VIS, ~13-15% No VIS. Varía por banco — ajústala si ya tienes una cotización.</p>
+
+      <label class="lead-label">Tipo de ingresos</label>
+      <div class="credito-radio-group">
+        <label><input type="radio" name="tipoTrabajador" value="empleado" id="c-empleado" checked> Empleado</label>
+        <label><input type="radio" name="tipoTrabajador" value="independiente" id="c-independiente"> Independiente</label>
+      </div>
+
+      <label class="lead-label" for="c-ingreso">Ingreso mensual (COP)</label>
+      <input class="lead-input" type="number" id="c-ingreso" placeholder="Ej: 4000000" min="0" inputmode="numeric">
+      <p class="lead-hint" id="credito-independiente-nota" hidden>Como independiente, algunos bancos evalúan un porcentaje del ingreso declarado (ej. 70-80%) por su variabilidad — considera poner un valor conservador.</p>
+    </form>
+
+    <div class="credito-resultado" id="credito-resultado">
+      <div class="credito-cuota-box">
+        <span class="credito-cuota-label">Cuota mensual estimada</span>
+        <span class="credito-cuota-value" id="c-cuota-mensual">$0</span>
+      </div>
+
+      <div class="credito-detalle-grid">
+        <div><span class="credito-detalle-label">Monto a financiar</span><span class="credito-detalle-value" id="c-monto-financiar">$0</span></div>
+        <div><span class="credito-detalle-label">Cuota inicial</span><span class="credito-detalle-value" id="c-valor-cuota-inicial">$0</span></div>
+        <div><span class="credito-detalle-label">Relación cuota/ingreso</span><span class="credito-detalle-value" id="c-relacion">—</span></div>
+        <div><span class="credito-detalle-label">Ingreso mínimo requerido</span><span class="credito-detalle-value" id="c-ingreso-minimo">—</span></div>
+      </div>
+
+      <p class="credito-cumplimiento" id="credito-cumplimiento" hidden></p>
+
+      <div class="credito-docs" id="credito-docs">
+        <h3>Documentos que necesitarás</h3>
+        <ul id="credito-docs-list"></ul>
+      </div>
+
+      <a id="credito-whatsapp" class="detail-whatsapp" target="_blank" rel="noopener" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
+        Hablar con Javier sobre mi crédito
+      </a>
+    </div>
+
+  </div>
+
+  <p class="credito-disclaimer">
+    ⚠️ Esta es una <strong>estimación educativa</strong>, no un estudio de crédito real. Las tasas, plazos y porcentajes de financiación varían según el banco, tu historial en centrales de riesgo, y las políticas vigentes de cada entidad. Los topes de VIS/VIP y la Ley de Vivienda mostrados aplican para Cali en 2026 (SMMLV $1.750.905) y pueden cambiar. Consulta siempre directamente con tu banco o con tu asesor antes de tomar una decisión.
+  </p>
+</main>
+
+<script src="../js/config.js?v=2"></script>
+<script src="../js/nav.js?v=2"></script>
+<script src="credito.js?v=1"></script>
+</body>
+</html>

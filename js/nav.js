@@ -8,6 +8,7 @@ const SITE_LINKS = [
   { href: "/catalogo/inicio/", label: "Inicio" },
   { href: "/catalogo/", label: "Inventario" },
   { href: "/catalogo/solicitudes/", label: "Solicitudes" },
+  { href: "/catalogo/credito/", label: "Calculadora de crédito" },
   { href: "/catalogo/consulta/", label: "¿Buscas algo específico?" },
 ];
 

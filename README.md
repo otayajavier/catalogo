@@ -160,6 +160,7 @@ otayajavier.github.io/catalogo/              → Inventario (sin cambios de URL)
 otayajavier.github.io/catalogo/consulta/     → Formulario de calificación (sin cambios de URL)
 otayajavier.github.io/catalogo/inicio/       → Página de presentación ("quién soy" + servicios)
 otayajavier.github.io/catalogo/solicitudes/  → Tablero de solicitudes de compradores
+otayajavier.github.io/catalogo/credito/      → Calculadora de crédito de vivienda
 ```
 
 Las cuatro páginas comparten un menú (☰, arriba a la izquierda) via `js/nav.js`.
@@ -182,6 +183,26 @@ con estas columnas: `Tipo | Barrios | Zona | Presup | Forma de Pago | Entidad
   Mientras no exista esa columna, se muestran todas las filas con datos.
 - (La pestaña "Solicitudes" que se mencionaba en una versión anterior de
   este README ya no se usa — puedes borrarla si la llegaste a crear.)
+
+## Calculadora de crédito
+
+Calcula cuota mensual estimada (sistema francés de amortización), si cumple
+la Ley de Vivienda (30% No VIS / 40% VIS de relación cuota-ingreso), el
+ingreso mínimo requerido, y una lista de documentos según si el usuario es
+empleado o independiente.
+
+**Importante — mantenimiento anual**: los topes de VIS/VIP (150 y 90 SMMLV
+para Cali) y el SMMLV mismo están hardcodeados en `credito/credito.js`
+(constante `SMMLV_2026`). **Actualízalos cada enero** cuando se decrete el
+nuevo salario mínimo — si no, los topes quedan desactualizados.
+
+Desde cada ficha de detalle del inventario hay un link "Simular crédito
+para este inmueble", que abre la calculadora con el valor ya precargado
+(`/catalogo/credito/?valor=225000000`).
+
+Las tasas de interés que trae por defecto (12.5% VIS, 14% No VIS) son de
+referencia de 2026 — revísalas de vez en cuando, varían con la política del
+Banco de la República y cada entidad.
 
 ## Notas
 

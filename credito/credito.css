@@ -1,0 +1,98 @@
+.credito-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+.credito-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 800px) {
+  .credito-grid { grid-template-columns: 1fr 1.1fr; align-items: start; }
+}
+
+.credito-form {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+}
+.credito-form .lead-label { margin-top: 16px; }
+.credito-form .lead-label:first-child { margin-top: 0; }
+
+.credito-tipo-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.credito-auto-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #fff;
+}
+
+.credito-radio-group {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 14px;
+}
+.credito-radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+
+.credito-range-value {
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--forest-dark);
+  font-size: 15px;
+  margin: 4px 0 0;
+}
+
+.credito-resultado {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.credito-cuota-box {
+  text-align: center;
+  padding: 18px;
+  background: #eef1e6;
+  border-radius: 8px;
+}
+.credito-cuota-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.credito-cuota-value { display: block; font-family: var(--font-display); font-size: 34px; color: var(--forest-dark); }
+
+.credito-detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.credito-detalle-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.credito-detalle-label { font-size: 12px; color: var(--muted); }
+.credito-detalle-value { font-family: var(--font-display); font-size: 16px; color: var(--ink); }
+
+.credito-cumplimiento {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+.credito-cumplimiento.ok { background: #eef1e6; color: var(--forest-dark); }
+.credito-cumplimiento.no-ok { background: #f6e6df; color: #8a4127; }
+
+.credito-docs h3 { font-size: 14px; margin: 0 0 8px; color: var(--ink); }
+.credito-docs ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+.credito-disclaimer {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}

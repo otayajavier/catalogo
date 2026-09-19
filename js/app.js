@@ -431,6 +431,7 @@ function detailHtml(listing) {
             Quiero conocer este inmueble
           </a>` : ""}
         ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
+        <a class="detail-crm-link" href="/catalogo/credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
       </div>
 
       ${similares.length ? `
