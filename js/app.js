@@ -42,15 +42,6 @@ function whatsappLink(message) {
   return `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function whatsappMessageForListing(listing, incluirLink) {
-  const price = formatCOP(priceForCard(listing).amount);
-  let msg = `Hola, quiero más información sobre este ${listing.tipo} en ${listing.barrio} (${price}).`;
-  if (incluirLink) {
-    msg += ` Lo vi aquí: ${window.location.origin}${urlWithVer(listing.catalogId)}`;
-  }
-  return msg;
-}
-
 function setupWhatsappFloat() {
   const el = document.getElementById("whatsapp-float");
   if (!whatsappConfigured()) return;
@@ -304,8 +295,6 @@ function cardHtml(listing) {
   if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push(`Parqueadero ${escapeHtml(listing.parqueadero)}`);
   if (listing.credito === "si" || listing.credito === "sí") specs.push("Aplica crédito");
 
-  const waHref = whatsappConfigured() ? whatsappLink(whatsappMessageForListing(listing)) : "";
-
   return `
     <article class="card">
       <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
@@ -318,14 +307,6 @@ function cardHtml(listing) {
         <div class="card-specs">${specs.map((s) => `<span>${s}</span>`).join("")}</div>
         <div class="card-actions">
           <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa →</button>
-          ${
-            waHref
-              ? `<a class="card-whatsapp track-contact" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${waHref}" target="_blank" rel="noopener" aria-label="Preguntar por WhatsApp sobre este inmueble">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
-                  WhatsApp
-                </a>`
-              : ""
-          }
         </div>
       </div>
     </article>
@@ -426,10 +407,21 @@ function detailHtml(listing) {
 
       <div class="detail-cta">
         ${whatsappConfigured() ? `
-          <a class="detail-whatsapp track-contact" id="detail-whatsapp-btn" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount}" href="${whatsappLink(whatsappMessageForListing(listing, true))}" target="_blank" rel="noopener">
+          <button type="button" class="detail-whatsapp" id="detail-lead-toggle">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
             Quiero conocer este inmueble
-          </a>` : ""}
+          </button>
+          <form class="detail-lead-form" id="detail-lead-form" hidden>
+            <input class="detail-lead-input" type="text" id="dl-nombre" placeholder="Tu nombre" required>
+            <input class="detail-lead-input" type="tel" id="dl-whatsapp" placeholder="Tu WhatsApp" required inputmode="numeric">
+            <select class="detail-lead-input" id="dl-credito" required>
+              <option value="">¿Ya tienes crédito aprobado o estás por gestionarlo?</option>
+              <option value="Aprobado">Sí, ya lo tengo aprobado</option>
+              <option value="En trámite">Lo estoy gestionando</option>
+              <option value="Contado">Voy a pagar de contado</option>
+            </select>
+            <button type="submit" class="detail-lead-submit">Enviar y continuar a WhatsApp →</button>
+          </form>` : ""}
         ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
         <a class="detail-crm-link" href="/catalogo/credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
       </div>
@@ -441,6 +433,64 @@ function detailHtml(listing) {
         </div>` : ""}
     </div>
   `;
+}
+
+function enviarLeadASheet(data) {
+  if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
+  // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
+  fetch(CONFIG.LEADS_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(data),
+  }).catch(() => {});
+}
+
+function wireDetailLeadForm(listing) {
+  const toggleBtn = document.getElementById("detail-lead-toggle");
+  const form = document.getElementById("detail-lead-form");
+  if (!toggleBtn || !form) return;
+
+  toggleBtn.addEventListener("click", () => {
+    toggleBtn.hidden = true;
+    form.hidden = false;
+    document.getElementById("dl-nombre").focus();
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("dl-nombre").value.trim();
+    const whatsapp = document.getElementById("dl-whatsapp").value.trim();
+    const credito = document.getElementById("dl-credito").value;
+    if (!nombre || !whatsapp || !credito) return;
+
+    const price = priceForCard(listing).amount;
+    const inmuebleTexto = `${listing.tipo} en ${listing.barrio} (${formatCOP(price)})`;
+    const inmuebleUrl = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
+
+    trackPixel("Lead", {
+      content_ids: [listing.catalogId],
+      content_name: inmuebleTexto,
+      value: price || undefined,
+      currency: "COP",
+    });
+
+    enviarLeadASheet({
+      origen: "Ficha de inmueble",
+      nombre,
+      whatsapp,
+      inmueble: inmuebleTexto,
+      inmuebleUrl,
+      estadoCredito: credito,
+    });
+
+    const msg = `Hola, soy ${nombre}. Quiero conocer este inmueble: ${inmuebleTexto}. Estado del crédito: ${credito}. ${inmuebleUrl}`;
+    const waHref = whatsappConfigured() ? `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}` : "#";
+
+    e.submitter.disabled = true;
+    e.submitter.textContent = "Enviando…";
+    setTimeout(() => { window.location.href = waHref; }, 300);
+  });
 }
 
 function wireDetailCarousel() {
@@ -490,6 +540,7 @@ function openDetail(id, { mode = "push" } = {}) {
   document.body.classList.add("no-scroll");
   overlay.scrollTop = 0;
   wireDetailCarousel();
+  wireDetailLeadForm(listing);
 
   // "push" solo se usa al abrir desde el catálogo (agrega una entrada al
   // historial, así "atrás" cierra la ficha). Al navegar a un "inmueble
