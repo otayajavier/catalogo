@@ -54,6 +54,7 @@ function wireForm() {
     e.preventDefault();
 
     const data = {
+      origen: "Consulta",
       nombre: document.getElementById("f-nombre").value.trim(),
       whatsapp: document.getElementById("f-whatsapp").value.trim(),
       presupuestoMin: document.getElementById("f-presupuesto-min").value,
