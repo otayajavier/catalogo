@@ -71,6 +71,13 @@
   line-height: 1.5;
 }
 
+.service-link {
+  color: var(--forest);
+  font-weight: 600;
+  text-decoration: none;
+}
+.service-link:hover { text-decoration: underline; }
+
 .inicio-band {
   text-align: center;
   padding: 40px 24px;
