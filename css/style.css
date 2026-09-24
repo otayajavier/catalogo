@@ -659,6 +659,13 @@ body.no-scroll { overflow: hidden; }
 .detail-lead-submit:hover { background: #1ebc5b; }
 .detail-lead-submit:disabled { opacity: 0.7; cursor: default; }
 
+.detail-lead-error {
+  margin: 0;
+  font-size: 12px;
+  color: #8a4127;
+  text-align: center;
+}
+
 .detail-crm-link {
   text-align: center;
   font-size: 13px;
