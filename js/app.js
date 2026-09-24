@@ -421,6 +421,7 @@ function detailHtml(listing) {
               <option value="Contado">Voy a pagar de contado</option>
             </select>
             <button type="submit" class="detail-lead-submit">Enviar y continuar a WhatsApp →</button>
+            <p class="detail-lead-error" id="detail-lead-error" hidden>Completa los 3 campos para continuar.</p>
           </form>` : ""}
         ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
         <a class="detail-crm-link" href="/catalogo/credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
@@ -462,7 +463,16 @@ function wireDetailLeadForm(listing) {
     const nombre = document.getElementById("dl-nombre").value.trim();
     const whatsapp = document.getElementById("dl-whatsapp").value.trim();
     const credito = document.getElementById("dl-credito").value;
-    if (!nombre || !whatsapp || !credito) return;
+    const error = document.getElementById("detail-lead-error");
+
+    // Validación explícita: no depende de que el navegador respete el
+    // "required" nativo (algunos navegadores integrados, como el de
+    // WhatsApp o Instagram, no siempre lo bloquean bien).
+    if (!nombre || !whatsapp || !credito) {
+      error.hidden = false;
+      return;
+    }
+    error.hidden = true;
 
     const price = priceForCard(listing).amount;
     const inmuebleTexto = `${listing.tipo} en ${listing.barrio} (${formatCOP(price)})`;
