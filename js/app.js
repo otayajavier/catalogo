@@ -265,6 +265,22 @@ function priceForCard(listing) {
   return { amount: 0, suffix: "" };
 }
 
+// Siempre hay una respuesta sobre crédito que mostrar: "Sí" aplica, "No"
+// (solo contado), o "Por revisar" cuando la celda del Sheet viene vacía —
+// nunca se omite el dato por completo.
+function creditoBucket(credito) {
+  const c = (credito || "").toLowerCase().trim();
+  if (c === "si" || c === "sí") return "si";
+  if (c === "no") return "no";
+  return "revisar";
+}
+function creditoLabel(credito) {
+  const bucket = creditoBucket(credito);
+  if (bucket === "si") return "Aplica crédito";
+  if (bucket === "no") return "Solo al contado";
+  return "Por revisar";
+}
+
 function isCasa(tipo) {
   return (tipo || "").toLowerCase().includes("casa");
 }
@@ -293,7 +309,7 @@ function cardHtml(listing) {
   if (listing.banos) specs.push(`${listing.banos} baños`);
   if (listing.piso) specs.push(pisoOrNivelesLabel(listing));
   if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push(`Parqueadero ${escapeHtml(listing.parqueadero)}`);
-  if (listing.credito === "si" || listing.credito === "sí") specs.push("Aplica crédito");
+  specs.push(creditoLabel(listing.credito));
 
   return `
     <article class="card">
@@ -402,7 +418,7 @@ function detailHtml(listing) {
         ${detailStat("bath", listing.banos || "", listing.banos === 1 ? "Baño" : "Baños")}
         ${detailStat("layers", listing.piso || "", isCasa(listing.tipo) ? "Niveles" : "Piso")}
         ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? detailStat("car", listing.parqueadero, "Parqueadero") : ""}
-        ${listing.credito === "si" || listing.credito === "sí" ? detailStat("credito", "Sí", "Aplica crédito") : ""}
+        ${detailStat("credito", creditoLabel(listing.credito), "Crédito")}
       </div>
 
       <div class="detail-cta">
@@ -595,7 +611,7 @@ function wireDetailOverlay() {
 let allListings = [];
 let filtersInitialized = false;
 let filterState = {
-  search: "", tipo: "", parqueadero: "", servicio: "",
+  search: "", tipo: "", parqueadero: "", servicio: "", credito: "",
   precioMin: null, precioMax: null,
   pisoMin: null, pisoMax: null,
   sort: "random",
@@ -653,6 +669,7 @@ function applyFilters(listings) {
     if (!matchesSearch(l)) return false;
     if (filterState.tipo && l.tipo !== filterState.tipo) return false;
     if (filterState.parqueadero && l.parqueadero !== filterState.parqueadero) return false;
+    if (filterState.credito && creditoBucket(l.credito) !== filterState.credito) return false;
     if (filterState.servicio === "venta" && !isVenta(l.servicio)) return false;
     if (filterState.servicio === "arriendo" && !isArriendo(l.servicio)) return false;
     if (!matchesPriceRange(l)) return false;
@@ -716,6 +733,7 @@ function readFiltersFromURL() {
   filterState.search = p.get("q") || "";
   filterState.tipo = p.get("tipo") || "";
   filterState.parqueadero = p.get("parqueadero") || "";
+  filterState.credito = p.get("credito") || "";
   filterState.servicio = p.get("servicio") || "";
   filterState.precioMin = p.has("precioMin") ? Number(p.get("precioMin")) : null;
   filterState.precioMax = p.has("precioMax") ? Number(p.get("precioMax")) : null;
@@ -729,6 +747,7 @@ function updateURL() {
   if (filterState.search) p.set("q", filterState.search);
   if (filterState.tipo) p.set("tipo", filterState.tipo);
   if (filterState.parqueadero) p.set("parqueadero", filterState.parqueadero);
+  if (filterState.credito) p.set("credito", filterState.credito);
   if (filterState.servicio) p.set("servicio", filterState.servicio);
   if (filterState.precioMin != null) p.set("precioMin", filterState.precioMin);
   if (filterState.precioMax != null) p.set("precioMax", filterState.precioMax);
@@ -745,6 +764,7 @@ function syncControlsFromState() {
   document.getElementById("f-search").value = filterState.search;
   document.getElementById("f-tipo").value = filterState.tipo;
   document.getElementById("f-parqueadero").value = filterState.parqueadero;
+  document.getElementById("f-credito").value = filterState.credito;
   document.getElementById("f-servicio").value = filterState.servicio;
   document.getElementById("f-precio-min").value = filterState.precioMin ?? "";
   document.getElementById("f-precio-max").value = filterState.precioMax ?? "";
@@ -757,7 +777,7 @@ function syncControlsFromState() {
 // Resalta cada "pill" cuando tiene un filtro aplicado, y actualiza el
 // texto de los pills de Precio/Piso para reflejar el rango elegido.
 function updatePillStates() {
-  ["f-tipo", "f-parqueadero", "f-servicio"].forEach((id) => {
+  ["f-tipo", "f-parqueadero", "f-credito", "f-servicio"].forEach((id) => {
     const el = document.getElementById(id);
     el.classList.toggle("pill-active", el.value !== "");
   });
@@ -812,6 +832,7 @@ function wireFilters() {
   document.getElementById("f-search").addEventListener("input", (e) => { filterState.search = e.target.value; onFilterChange(); });
   document.getElementById("f-tipo").addEventListener("change", (e) => { filterState.tipo = e.target.value; onFilterChange(); });
   document.getElementById("f-parqueadero").addEventListener("change", (e) => { filterState.parqueadero = e.target.value; onFilterChange(); });
+  document.getElementById("f-credito").addEventListener("change", (e) => { filterState.credito = e.target.value; onFilterChange(); });
   document.getElementById("f-servicio").addEventListener("change", (e) => { filterState.servicio = e.target.value; onFilterChange(); });
   document.getElementById("f-sort").addEventListener("change", (e) => { filterState.sort = e.target.value; onFilterChange(); });
 
@@ -832,7 +853,7 @@ function wireFilters() {
   });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
-    filterState = { search: "", tipo: "", parqueadero: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
+    filterState = { search: "", tipo: "", parqueadero: "", credito: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
     syncControlsFromState();
     onFilterChange();
   });
