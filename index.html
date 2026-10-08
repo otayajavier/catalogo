@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inmuebles disponibles — Portafolio</title>
-<meta name="description" content="Inventario de inmuebles disponibles en venta y arriendo.">
+<title>Inmuebles en venta y arriendo — Sur de Cali | Javier Otaya</title>
+<meta name="description" content="Portafolio de inmuebles disponibles en venta y arriendo en el Sur de Cali (Valle del Lili, Bochalema, Ciudad Meléndez y más). Actualizado en vivo.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -31,6 +31,12 @@
     </div>
     <select id="f-tipo" class="pill pill-select" aria-label="Tipo de inmueble"><option value="">Tipo</option></select>
     <select id="f-parqueadero" class="pill pill-select" aria-label="Parqueadero"><option value="">Parqueadero</option></select>
+    <select id="f-credito" class="pill pill-select" aria-label="Aplica crédito">
+      <option value="">Crédito</option>
+      <option value="si">Aplica crédito</option>
+      <option value="no">Solo al contado</option>
+      <option value="revisar">Por revisar</option>
+    </select>
     <select id="f-servicio" class="pill pill-select" aria-label="Venta o arriendo">
       <option value="">Venta/Arriendo</option>
       <option value="venta">Solo venta</option>
@@ -104,6 +110,6 @@
 
 <script src="js/config.js?v=2"></script>
 <script src="js/nav.js?v=2"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>
