@@ -34,4 +34,10 @@ const CONFIG = {
   // de calificación (carpeta /consulta) en una pestaña "Leads" de tu Sheet.
   // Ver instrucciones en el script de Apps Script.
   LEADS_WEBAPP_URL: "PEGA_AQUI_LA_URL_DEL_WEB_APP",
+
+  //ENCABEZADOS 
+   MARCA_NOMBRE: "Javier Otaya",
+   MARCA_FRASE: "Agente inmobiliario · Sur de Cali",
+   LOGO_URL: "",
+   FOTO_AGENTE_URL: "",
 };
