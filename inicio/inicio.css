@@ -8,6 +8,22 @@
   padding: 40px 0 48px;
   border-bottom: 1px solid var(--line);
 }
+/* Foto del agente (opcional, ver FOTO_AGENTE_URL en js/config.js) */
+.inicio-foto {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--brass);
+  margin-bottom: 22px;
+  display: block;
+}
+.inicio-foto[hidden] { display: none; }
+@media (min-width: 760px) {
+  .inicio-hero.con-foto { display: flex; align-items: center; gap: 48px; }
+  .inicio-hero.con-foto .inicio-foto { width: 230px; height: 230px; margin: 0; flex-shrink: 0; order: 2; }
+}
 .inicio-hero h1 {
   font-family: var(--font-display);
   font-weight: 500;

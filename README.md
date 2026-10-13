@@ -204,6 +204,25 @@ Las tasas de interés que trae por defecto (12.5% VIS, 14% No VIS) son de
 referencia de 2026 — revísalas de vez en cuando, varían con la política del
 Banco de la República y cada entidad.
 
+## Contacto: formulario corto en el overlay (reemplaza el WhatsApp directo)
+
+Desde la ficha de detalle de cada inmueble, "Quiero conocer este inmueble"
+ya no abre WhatsApp directo — abre un formulario corto (nombre, WhatsApp, y
+si ya tiene crédito aprobado/en trámite/contado). Al enviarlo:
+
+1. Dispara el evento **`Lead`** del Pixel (no `Contact`) — señal más precisa
+   para optimizar campañas.
+2. Guarda la fila en la pestaña **"Leads"** de tu Sheet (mismo formato que
+   usará `/consulta/` cuando la actives — columna "Origen" distingue de
+   cuál formulario vino cada lead).
+3. Abre WhatsApp con el mensaje ya armado, incluyendo el link directo a esa
+   ficha.
+
+El botón de WhatsApp que aparecía en cada tarjeta de la vista general **se
+quitó** — la vista general solo deja el botón flotante para preguntas
+sueltas. La idea: cualquier contacto sobre un inmueble específico pasa por
+este formulario corto, dando datos de mejor calidad para tus campañas.
+
 ## Notas
 
 - El catálogo es público a propósito (según lo que confirmaste): cualquiera
@@ -212,3 +231,12 @@ Banco de la República y cada entidad.
   ser clicable (no se rompe, simplemente no navega a ningún lado).
 - Si algún inmueble no tiene imagen en "Imagen Previa", se muestra un
   marcador de "Sin imagen disponible" en vez de un ícono roto.
+
+## Marca (logo, nombre y foto)
+
+En `js/config.js` hay 4 campos de marca: `MARCA_NOMBRE`, `MARCA_FRASE`,
+`LOGO_URL` y `FOTO_AGENTE_URL`. El nombre y el logo aparecen arriba en todas
+las páginas (si no hay logo, se muestra un monograma con las iniciales). La
+foto aparece en la página de Inicio. Para el logo y la foto, sube la imagen al
+mismo repositorio (por ejemplo `img/logo.png`) y pon la ruta completa:
+`/catalogo/img/logo.png`.

@@ -32,6 +32,7 @@
 
 .credito-form .lead-label { margin-top: 16px; display: block; }
 .credito-form .lead-label:first-of-type { margin-top: 0; }
+.credito-form .credito-row-2 .lead-label { margin-top: 18px; }
 
 .credito-row-2 {
   display: grid;

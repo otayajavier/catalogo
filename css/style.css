@@ -1,9 +1,9 @@
 :root {
-  --paper: #f1eee3;
+  --paper: #f7f4ec;
   --card: #fffdf8;
   --ink: #232b22;
   --muted: #6d6759;
-  --line: #ddd7c6;
+  --line: #e3dccb;
   --forest: #3f5a44;
   --forest-dark: #2c4030;
   --brass: #a9812e;
@@ -29,25 +29,57 @@ body {
 }
 
 .topbar {
-  padding: 14px 20px;
+  padding: 14px 20px 16px;
   border-bottom: 1px solid var(--line);
 }
 
 .topbar-inner {
   max-width: 1220px;
   margin: 0 auto;
-  padding-left: 46px; /* deja espacio al botón de menú (☰), que es fixed */
 }
+/* La marca deja espacio al botón de menú (☰), que es fixed; el título
+   va debajo, alineado con el contenido de la página */
+.topbar-inner > .brand { margin-left: 46px; }
 
 .topbar-title {
   display: block;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 500;
+  line-height: 1.15;
   color: var(--forest-dark);
 }
+
+/* Marca (logo/monograma + nombre), la inyecta js/nav.js */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px; /* misma altura que el botón ☰, quedan alineados */
+  text-decoration: none;
+  color: var(--forest-dark);
+}
+.brand-mono {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 2px var(--forest), inset 0 0 0 3px var(--brass);
+  flex-shrink: 0;
+}
+.brand-logo { height: 34px; width: auto; max-width: 120px; object-fit: contain; flex-shrink: 0; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+.brand-text strong { font-size: 14px; font-weight: 600; color: var(--ink); }
+.brand-text span { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
 
 .topbar-subtitle {
   display: none;
@@ -58,13 +90,11 @@ body {
 
 /* En escritorio recuperamos el título grande de las versiones anteriores */
 @media (min-width: 860px) {
-  .topbar { padding: 48px 32px 30px; }
+  .topbar { padding: 16px 32px 30px; }
   .topbar-title {
-    font-family: var(--font-display);
-    font-weight: 500;
+    margin-top: 28px;
     font-size: clamp(32px, 4vw, 46px);
     letter-spacing: -0.01em;
-    text-transform: none;
   }
   .topbar-subtitle { display: block; }
 }
@@ -421,13 +451,14 @@ body {
 }
 
 @media (max-width: 600px) {
-  .gallery-wrap { padding: 24px 20px 40px; }
+  .gallery-wrap { padding: 20px 16px 40px; }
+  .gallery { gap: 18px; }
+  .card-image-link { aspect-ratio: 16 / 10; }
 }
 
 /* ── Banner de ventas recientes (prueba social) ───────────────── */
 .sales-banner {
-  max-width: 1220px;
-  margin: 0 auto;
+  margin: 0;
   padding: 10px 20px;
   font-size: 13px;
   font-weight: 600;
@@ -435,10 +466,11 @@ body {
   background: #eef1e6;
   border-bottom: 1px solid var(--line);
 }
-@media (min-width: 860px) { .sales-banner { padding: 10px 32px; } }
+@media (min-width: 860px) { .sales-banner { padding: 10px max(32px, calc((100% - 1220px) / 2 + 20px)); } }
 
 /* ── Overlay de la ficha de detalle ───────────────────────────── */
 body.no-scroll { overflow: hidden; }
+body.no-scroll .site-nav-toggle { display: none; }
 
 .detail-overlay {
   position: fixed;
@@ -770,3 +802,29 @@ body.no-scroll { overflow: hidden; }
 }
 .site-nav-panel a:hover { background: var(--paper); }
 .site-nav-panel a.active { background: var(--forest); color: #fff; }
+
+/* ── Campos de formulario compartidos (consulta + calculadora) ── */
+.lead-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 18px 0 6px;
+}
+.lead-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.lead-input:focus-visible { outline: 2px solid var(--forest); outline-offset: 1px; }
+.lead-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 0;
+}

@@ -21,5 +21,16 @@ function setupWhatsappFloat() {
   el.hidden = false;
 }
 
+// Foto del agente en el hero (opcional, se configura en js/config.js)
+function setupFotoAgente() {
+  const img = document.getElementById("inicio-foto");
+  if (!img || !CONFIG.FOTO_AGENTE_URL) return;
+  img.src = CONFIG.FOTO_AGENTE_URL;
+  img.alt = CONFIG.MARCA_NOMBRE || "";
+  img.hidden = false;
+  document.querySelector(".inicio-hero").classList.add("con-foto");
+}
+
 initMetaPixelIfConfigured();
 setupWhatsappFloat();
+setupFotoAgente();

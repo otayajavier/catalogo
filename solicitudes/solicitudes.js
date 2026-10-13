@@ -87,7 +87,7 @@ function cardHtml(s, i) {
 
   return `
     <article class="solicitud-card">
-      <span class="solicitud-tag">Busco para Compra</span>
+      <span class="solicitud-tag">Compra</span>
       <h3 class="solicitud-titulo">${escapeHtml(s.tipo)}</h3>
       ${s.presupuesto ? `<p class="solicitud-precio">Presupuesto: $${s.presupuesto}M</p>` : ""}
       ${detalleZona ? `<p class="solicitud-detalle"><strong>Zona:</strong> ${escapeHtml(detalleZona)}</p>` : ""}

@@ -62,4 +62,26 @@ function renderSiteNav() {
   }, { passive: true });
 }
 
+// ─────────────────────────────────────────────────────────────
+// Marca: logo (o monograma con iniciales) + nombre, al inicio del
+// encabezado de cada página. Se configura en js/config.js.
+// ─────────────────────────────────────────────────────────────
+function renderBrand() {
+  const inner = document.querySelector(".topbar-inner");
+  if (!inner || typeof CONFIG === "undefined" || !CONFIG.MARCA_NOMBRE) return;
+
+  const esc = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const iniciales = CONFIG.MARCA_NOMBRE.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+  const logo = CONFIG.LOGO_URL
+    ? `<img class="brand-logo" src="${esc(CONFIG.LOGO_URL)}" alt="">`
+    : `<span class="brand-mono" aria-hidden="true">${esc(iniciales)}</span>`;
+
+  const brand = document.createElement("a");
+  brand.className = "brand";
+  brand.href = SITE_LINKS[0].href;
+  brand.innerHTML = `${logo}<span class="brand-text"><strong>${esc(CONFIG.MARCA_NOMBRE)}</strong>${CONFIG.MARCA_FRASE ? `<span>${esc(CONFIG.MARCA_FRASE)}</span>` : ""}</span>`;
+  inner.prepend(brand);
+}
+
 renderSiteNav();
+renderBrand();
