@@ -17,8 +17,47 @@ function initMetaPixel() {
   fbq('track', 'PageView');
 }
 
+// Devuelve el ID del evento, para guardarlo junto con el lead en la hoja.
+// Así, cuando el lead se califica, el aviso que sale desde la hoja se puede
+// relacionar con este mismo Lead.
 function trackPixel(event, params) {
-  if (typeof fbq === "function") fbq("track", event, params || {}, { eventID: generateEventId() });
+  const eventId = generateEventId();
+  if (typeof fbq === "function") fbq("track", event, params || {}, { eventID: eventId });
+  return eventId;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Datos para que Meta reconozca a la persona cuando el lead se califique
+// (se guardan en la hoja Leads; el aviso a Meta sale desde Apps Script).
+// ─────────────────────────────────────────────────────────────
+function leerCookie(nombre) {
+  const m = document.cookie.match(new RegExp("(?:^|; )" + nombre + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+// Si la visita llegó desde un anuncio, la URL trae "fbclid". Se guarda por si
+// el navegador no deja crear la cookie _fbc (o la persona navega a otra página).
+function guardarClicAnuncio() {
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+    if (fbclid) localStorage.setItem("fbclid_info", JSON.stringify({ id: fbclid, ts: Date.now() }));
+  } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+
+function datosParaMeta() {
+  let fbc = leerCookie("_fbc");
+  if (!fbc) {
+    try {
+      const info = JSON.parse(localStorage.getItem("fbclid_info") || "null");
+      if (info && info.id && Date.now() - info.ts < 90 * 24 * 3600 * 1000) fbc = `fb.1.${info.ts}.${info.id}`;
+    } catch (e) { /* ignorar */ }
+  }
+  return {
+    fbc,
+    fbp: leerCookie("_fbp"),
+    pagina: window.location.href.slice(0, 500),
+    navegador: navigator.userAgent,
+  };
 }
 
 // ID único por evento — necesario para que Meta pueda "deduplicar" cuando
@@ -455,11 +494,13 @@ function detailHtml(listing) {
 function enviarLeadASheet(data) {
   if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
   // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
+  // "keepalive": el envío se completa aunque enseguida se abra WhatsApp.
   fetch(CONFIG.LEADS_WEBAPP_URL, {
     method: "POST",
     mode: "no-cors",
+    keepalive: true,
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(data),
+    body: JSON.stringify(Object.assign({}, data, datosParaMeta())),
   }).catch(() => {});
 }
 
@@ -494,7 +535,7 @@ function wireDetailLeadForm(listing) {
     const inmuebleTexto = `${listing.tipo} en ${listing.barrio} (${formatCOP(price)})`;
     const inmuebleUrl = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
 
-    trackPixel("Lead", {
+    const eventId = trackPixel("Lead", {
       content_ids: [listing.catalogId],
       content_name: inmuebleTexto,
       value: price || undefined,
@@ -502,6 +543,7 @@ function wireDetailLeadForm(listing) {
     });
 
     enviarLeadASheet({
+      eventId,
       origen: "Ficha de inmueble",
       nombre,
       whatsapp,
@@ -923,6 +965,7 @@ async function loadAndRender() {
   }
 }
 
+guardarClicAnuncio();
 initMetaPixel();
 setupWhatsappFloat();
 wireCardTracking();
