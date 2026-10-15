@@ -33,8 +33,7 @@ const CONFIG = {
   // URL del "Web App" de Apps Script que guarda los envíos del formulario
   // de calificación (carpeta /consulta) en una pestaña "Leads" de tu Sheet.
   // Ver instrucciones en el script de Apps Script.
-  LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbz7ewmu4on5ZVh7InHwgIepyz7VyOS6nLZNaXV2eGMJsTiD4xMgHcRc4XE1-DIujGYXoA/exec
-",
+  LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbz7ewmu4on5ZVh7InHwgIepyz7VyOS6nLZNaXV2eGMJsTiD4xMgHcRc4XE1-DIujGYXoA/exec",
 
   //ENCABEZADOS 
    MARCA_NOMBRE: "Javier Otaya",
