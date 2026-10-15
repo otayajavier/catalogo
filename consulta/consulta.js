@@ -8,6 +8,39 @@ function trackPixelLead(params) {
   const eventId =
     window.crypto && crypto.randomUUID ? crypto.randomUUID() : "ev-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   fbq("track", "Lead", params, { eventID: eventId });
+  return eventId;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Datos para que Meta reconozca a la persona cuando el lead se califique
+// (se guardan en la hoja Leads; el aviso a Meta sale desde Apps Script).
+// ─────────────────────────────────────────────────────────────
+function leerCookie(nombre) {
+  const m = document.cookie.match(new RegExp("(?:^|; )" + nombre + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+function guardarClicAnuncio() {
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+    if (fbclid) localStorage.setItem("fbclid_info", JSON.stringify({ id: fbclid, ts: Date.now() }));
+  } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+
+function datosParaMeta() {
+  let fbc = leerCookie("_fbc");
+  if (!fbc) {
+    try {
+      const info = JSON.parse(localStorage.getItem("fbclid_info") || "null");
+      if (info && info.id && Date.now() - info.ts < 90 * 24 * 3600 * 1000) fbc = `fb.1.${info.ts}.${info.id}`;
+    } catch (e) { /* ignorar */ }
+  }
+  return {
+    fbc,
+    fbp: leerCookie("_fbp"),
+    pagina: window.location.href.slice(0, 500),
+    navegador: navigator.userAgent,
+  };
 }
 
 function initMetaPixelIfConfigured() {
@@ -29,11 +62,13 @@ function initMetaPixelIfConfigured() {
 function enviarASheet(data) {
   if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
   // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
+  // "keepalive": el envío se completa aunque enseguida se cambie de página.
   fetch(CONFIG.LEADS_WEBAPP_URL, {
     method: "POST",
     mode: "no-cors",
+    keepalive: true,
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(data),
+    body: JSON.stringify(Object.assign({}, data, datosParaMeta())),
   }).catch(() => {}); // si falla el guardado, no bloqueamos la experiencia del lead
 }
 
@@ -66,7 +101,7 @@ function wireForm() {
     document.getElementById("lead-form").hidden = true;
     document.getElementById("lead-thanks").hidden = false;
 
-    trackPixelLead({
+    data.eventId = trackPixelLead({
       content_name: data.zona || "Sin zona especificada",
       value: (Number(data.presupuestoMin) + Number(data.presupuestoMax)) / 2 * 1e6 || undefined,
       currency: "COP",
@@ -87,5 +122,6 @@ function wireForm() {
   });
 }
 
+guardarClicAnuncio();
 initMetaPixelIfConfigured();
 wireForm();
