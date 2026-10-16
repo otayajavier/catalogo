@@ -445,6 +445,12 @@ function detailHtml(listing) {
         </div>
       ` : ""}
       <span class="card-badge ${badgeClass} detail-badge">${escapeHtml(listing.servicio || "Disponible")}</span>
+      ${carouselPhotos[0] !== PLACEHOLDER_IMG ? `
+        <button type="button" class="carousel-zoom" id="carousel-zoom" aria-label="Ampliar foto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          Ampliar
+        </button>
+      ` : ""}
     </div>
 
     <div class="detail-body">
@@ -574,14 +580,234 @@ function wireDetailCarousel() {
   const track = document.getElementById("detail-carousel-track");
   if (!track) return;
   let startX = null;
+  let ultimoDeslizamiento = 0;
   track.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
   track.addEventListener("touchend", (e) => {
     if (startX == null) return;
     const delta = e.changedTouches[0].clientX - startX;
-    if (Math.abs(delta) > 40) moveCarousel(delta < 0 ? 1 : -1);
+    if (Math.abs(delta) > 40) { moveCarousel(delta < 0 ? 1 : -1); ultimoDeslizamiento = Date.now(); }
     startX = null;
   });
+
+  // Tocar la foto (sin deslizar) o el botón "Ampliar" abre el visor.
+  const hayFotos = carouselPhotos[0] !== PLACEHOLDER_IMG;
+  if (!hayFotos) return;
+  track.addEventListener("click", (e) => {
+    if (e.target.tagName !== "IMG" || Date.now() - ultimoDeslizamiento < 400) return;
+    openLightbox(carouselIndex);
+  });
+  const zoomBtn = document.getElementById("carousel-zoom");
+  if (zoomBtn) zoomBtn.addEventListener("click", () => openLightbox(carouselIndex));
 }
+
+// ─────────────────────────────────────────────────────────────
+// Visor de fotos ampliadas: foto completa a pantalla entera, pasar con
+// flechas o deslizando, acercar con dos dedos / doble toque / rueda del
+// mouse, y cerrar con ✕, Esc o el botón "atrás" del celular.
+// ─────────────────────────────────────────────────────────────
+const lb = {
+  el: null, img: null, stage: null, count: null, hint: null,
+  index: 0, scale: 1, tx: 0, ty: 0,
+  pointers: new Map(), pinch: null, pan: null, swipeX: null, lastTap: null,
+  historial: false, ignorarPopstate: false, tHint: null,
+};
+
+function buildLightbox() {
+  if (lb.el) return;
+  const el = document.createElement("div");
+  el.className = "lightbox";
+  el.hidden = true;
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.setAttribute("aria-label", "Fotos ampliadas");
+  el.innerHTML = `
+    <div class="lightbox-top">
+      <span class="lightbox-count" id="lightbox-count"></span>
+      <button type="button" class="lightbox-btn" id="lightbox-close" aria-label="Cerrar fotos">✕</button>
+    </div>
+    <div class="lightbox-stage" id="lightbox-stage">
+      <img id="lightbox-img" alt="">
+    </div>
+    <button type="button" class="lightbox-btn lightbox-prev" id="lightbox-prev" aria-label="Foto anterior">‹</button>
+    <button type="button" class="lightbox-btn lightbox-next" id="lightbox-next" aria-label="Foto siguiente">›</button>
+    <div class="lightbox-hint" id="lightbox-hint"></div>
+  `;
+  document.body.appendChild(el);
+  lb.el = el;
+  lb.img = el.querySelector("#lightbox-img");
+  lb.stage = el.querySelector("#lightbox-stage");
+  lb.count = el.querySelector("#lightbox-count");
+  lb.hint = el.querySelector("#lightbox-hint");
+
+  el.querySelector("#lightbox-close").addEventListener("click", () => closeLightbox());
+  el.querySelector("#lightbox-prev").addEventListener("click", () => lightboxGo(-1));
+  el.querySelector("#lightbox-next").addEventListener("click", () => lightboxGo(1));
+  lb.img.addEventListener("error", () => { lb.img.src = PLACEHOLDER_IMG; });
+
+  lb.stage.addEventListener("pointerdown", lbPointerDown);
+  lb.stage.addEventListener("pointermove", lbPointerMove);
+  lb.stage.addEventListener("pointerup", lbPointerUp);
+  lb.stage.addEventListener("pointercancel", lbPointerUp);
+  lb.stage.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+    lbZoomAt(lb.scale * factor, e.clientX, e.clientY);
+  }, { passive: false });
+}
+
+function lightboxOpen() { return lb.el && !lb.el.hidden; }
+
+function openLightbox(index) {
+  buildLightbox();
+  lb.index = index;
+  lb.el.hidden = false;
+  lbShow();
+  const touch = window.matchMedia("(pointer: coarse)").matches;
+  lb.hint.textContent = touch ? "Pellizca o toca dos veces para acercar" : "Doble clic o rueda del mouse para acercar";
+  lb.hint.classList.remove("oculto");
+  clearTimeout(lb.tHint);
+  lb.tHint = setTimeout(() => lb.hint.classList.add("oculto"), 2500);
+  // Entrada en el historial: así el botón "atrás" del celular cierra el
+  // visor y deja la ficha abierta, en vez de salirse de ella.
+  window.history.pushState({ ver: currentDetailId, fotos: true }, "", window.location.href);
+  lb.historial = true;
+  lb.el.querySelector("#lightbox-close").focus();
+}
+
+function closeLightbox({ fromHistory = false } = {}) {
+  if (!lightboxOpen()) return;
+  lb.el.hidden = true;
+  // Deja el carrusel de la ficha en la última foto vista.
+  carouselIndex = lb.index;
+  renderCarousel();
+  if (lb.historial && !fromHistory) {
+    lb.historial = false;
+    lb.ignorarPopstate = true; // ese "atrás" lo hicimos nosotros: la ficha no se vuelve a abrir
+    window.history.back();
+  }
+  lb.historial = false;
+}
+
+function lbShow() {
+  const total = carouselPhotos.length;
+  lb.img.src = carouselPhotos[lb.index];
+  lb.count.textContent = `${lb.index + 1} / ${total}`;
+  lb.el.querySelector("#lightbox-prev").hidden = total < 2;
+  lb.el.querySelector("#lightbox-next").hidden = total < 2;
+  lbReset(false);
+  // Precargar las vecinas para que el cambio sea inmediato.
+  [lb.index + 1, lb.index - 1].forEach((i) => {
+    const src = carouselPhotos[(i + total) % total];
+    if (src) { const pre = new Image(); pre.src = src; }
+  });
+}
+
+function lightboxGo(delta) {
+  const total = carouselPhotos.length;
+  if (total < 2) return;
+  lb.index = (lb.index + delta + total) % total;
+  lbShow();
+}
+
+function lbApply(animar) {
+  lb.stage.classList.toggle("animar", !!animar);
+  lb.img.style.transform = `translate(${lb.tx}px, ${lb.ty}px) scale(${lb.scale})`;
+  lb.stage.style.cursor = lb.scale > 1 ? "grab" : "zoom-in";
+}
+
+function lbReset(animar) { lb.scale = 1; lb.tx = 0; lb.ty = 0; lbApply(animar); }
+
+// Evita que la foto ampliada se salga del todo de la pantalla.
+function lbClamp() {
+  const maxX = (lb.img.offsetWidth * (lb.scale - 1)) / 2;
+  const maxY = (lb.img.offsetHeight * (lb.scale - 1)) / 2;
+  lb.tx = Math.max(-maxX, Math.min(maxX, lb.tx));
+  lb.ty = Math.max(-maxY, Math.min(maxY, lb.ty));
+}
+
+// Acerca o aleja dejando fijo el punto (x, y) de la pantalla.
+function lbZoomAt(nuevaEscala, x, y, animar) {
+  const s = Math.max(1, Math.min(4, nuevaEscala));
+  const r = lb.stage.getBoundingClientRect();
+  const cx = x - (r.left + r.width / 2);
+  const cy = y - (r.top + r.height / 2);
+  lb.tx = cx - ((cx - lb.tx) * s) / lb.scale;
+  lb.ty = cy - ((cy - lb.ty) * s) / lb.scale;
+  lb.scale = s;
+  if (s === 1) { lb.tx = 0; lb.ty = 0; }
+  lbClamp();
+  lbApply(animar);
+}
+
+function lbDist() {
+  const [a, b] = [...lb.pointers.values()];
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function lbPointerDown(e) {
+  lb.stage.setPointerCapture(e.pointerId);
+  lb.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
+  if (lb.pointers.size === 2) {
+    const [a, b] = [...lb.pointers.values()];
+    lb.pinch = { dist: lbDist(), scale: lb.scale, tx: lb.tx, ty: lb.ty, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    lb.pan = null; lb.swipeX = null;
+  } else if (lb.pointers.size === 1) {
+    if (lb.scale > 1) lb.pan = { x: e.clientX, y: e.clientY, tx: lb.tx, ty: lb.ty };
+    else lb.swipeX = e.clientX;
+  }
+}
+
+function lbPointerMove(e) {
+  const p = lb.pointers.get(e.pointerId);
+  if (!p) return;
+  p.x = e.clientX; p.y = e.clientY;
+  if (lb.pinch && lb.pointers.size === 2) {
+    // Zoom relativo al inicio del pellizco.
+    lb.scale = lb.pinch.scale; lb.tx = lb.pinch.tx; lb.ty = lb.pinch.ty;
+    lbZoomAt(lb.pinch.scale * (lbDist() / lb.pinch.dist), lb.pinch.mx, lb.pinch.my);
+  } else if (lb.pan) {
+    lb.tx = lb.pan.tx + (e.clientX - lb.pan.x);
+    lb.ty = lb.pan.ty + (e.clientY - lb.pan.y);
+    lbClamp();
+    lbApply(false);
+  } else if (lb.swipeX != null) {
+    lb.img.style.transform = `translateX(${e.clientX - lb.swipeX}px)`; // la foto sigue al dedo
+  }
+}
+
+function lbPointerUp(e) {
+  const p = lb.pointers.get(e.pointerId);
+  lb.pointers.delete(e.pointerId);
+  if (!p) return;
+  if (lb.pinch) {
+    if (lb.pointers.size < 2) lb.pinch = null;
+    if (lb.scale < 1.05) lbReset(true);
+    return;
+  }
+  const movio = Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 12;
+  if (lb.swipeX != null) {
+    const dx = e.clientX - lb.swipeX;
+    lb.swipeX = null;
+    if (Math.abs(dx) > 50 && carouselPhotos.length > 1) { lightboxGo(dx < 0 ? 1 : -1); lb.lastTap = null; return; }
+    lbApply(true); // vuelve a su sitio si el deslizamiento fue corto
+  }
+  lb.pan = null;
+  if (movio) { lb.lastTap = null; return; }
+  // Doble toque / doble clic: acercar ahí, o volver al tamaño normal.
+  const ahora = Date.now();
+  if (lb.lastTap && ahora - lb.lastTap.t < 320 && Math.hypot(e.clientX - lb.lastTap.x, e.clientY - lb.lastTap.y) < 30) {
+    if (lb.scale > 1) lbReset(true); else lbZoomAt(2.5, e.clientX, e.clientY, true);
+    lb.lastTap = null;
+  } else {
+    lb.lastTap = { t: ahora, x: e.clientX, y: e.clientY };
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (!lightboxOpen()) return;
+  if (e.key === "ArrowRight") lightboxGo(1);
+  else if (e.key === "ArrowLeft") lightboxGo(-1);
+});
 
 function verParamFromURL() {
   return new URLSearchParams(window.location.search).get("ver");
@@ -608,6 +834,7 @@ function openDetail(id, { mode = "push" } = {}) {
   document.body.classList.add("no-scroll");
   overlay.scrollTop = 0;
   wireDetailCarousel();
+  renderCarousel(); // marca el primer punto del carrusel
   wireDetailLeadForm(listing);
 
   // "push" solo se usa al abrir desde el catálogo (agrega una entrada al
@@ -642,9 +869,14 @@ function wireDetailOverlay() {
   });
   document.getElementById("detail-content").addEventListener("click", handleTrackableClick);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !document.getElementById("detail-overlay").hidden) closeDetail();
+    if (e.key !== "Escape") return;
+    if (lightboxOpen()) closeLightbox(); // Esc primero cierra las fotos ampliadas
+    else if (!document.getElementById("detail-overlay").hidden) closeDetail();
   });
   window.addEventListener("popstate", () => {
+    // "Atrás" con el visor de fotos abierto: solo se cierra el visor.
+    if (lb.ignorarPopstate) { lb.ignorarPopstate = false; return; }
+    if (lightboxOpen()) { closeLightbox({ fromHistory: true }); return; }
     const id = verParamFromURL();
     if (id) openDetail(id, { mode: "none" });
     else closeDetail({ goBack: false });
