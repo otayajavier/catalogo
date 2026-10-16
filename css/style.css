@@ -523,7 +523,7 @@ body.no-scroll .site-nav-toggle { display: none; }
 .detail-carousel {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: var(--line);
+  background: #1f2721; /* color de las franjas cuando la foto es vertical */
   overflow: hidden;
 }
 .detail-carousel-track {
@@ -534,8 +534,9 @@ body.no-scroll .site-nav-toggle { display: none; }
 .detail-carousel-track img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* foto completa, sin recortes */
   flex: 0 0 100%;
+  cursor: zoom-in;
 }
 .carousel-arrow {
   position: absolute;
@@ -827,4 +828,115 @@ body.no-scroll .site-nav-toggle { display: none; }
   font-size: 12px;
   color: var(--muted);
   margin: 6px 0 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Visor de fotos ampliadas (se abre al tocar una foto de la ficha)
+   ───────────────────────────────────────────────────────────── */
+.carousel-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: rgba(20, 24, 18, 0.6);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.carousel-zoom:hover { background: rgba(20, 24, 18, 0.8); }
+.carousel-zoom svg { width: 14px; height: 14px; }
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #0e120f;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lightbox[hidden] { display: none; }
+.lightbox-stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  touch-action: none; /* el visor maneja pellizcar y deslizar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+}
+.lightbox-stage.animar img { transition: transform 0.2s ease; }
+.lightbox-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  pointer-events: none;
+}
+.lightbox-top > * { pointer-events: auto; }
+.lightbox-count { background: rgba(0, 0, 0, 0.45); padding: 4px 10px; border-radius: 999px; }
+.lightbox-btn {
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-btn:hover { background: rgba(255, 255, 255, 0.26); }
+.lightbox-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.lightbox-prev, .lightbox-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+.lightbox-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.lightbox-hint.oculto { opacity: 0; }
+@media (max-width: 600px) {
+  .lightbox-prev, .lightbox-next { display: none; } /* en celular se desliza con el dedo */
 }
