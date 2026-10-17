@@ -419,6 +419,7 @@ function renderCarousel() {
   const dots = document.getElementById("detail-carousel-dots");
   if (!track) return;
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  if (!dots) return; // con una sola foto no hay puntos
   dots.querySelectorAll("button").forEach((d, i) => d.classList.toggle("active", i === carouselIndex));
 }
 
@@ -820,9 +821,131 @@ function urlWithVer(id) {
   return window.location.pathname + (q ? "?" + q : "");
 }
 
+// ─────────────────────────────────────────────────────────────
+// Enlaces viejos (?ver=...) de inmuebles que cambiaron o ya no están
+// ─────────────────────────────────────────────────────────────
+// El ID termina en un código corto sacado del link de la ficha externa, que
+// no cambia aunque se edite el precio, el barrio o el tipo. Si el ID completo
+// no coincide, se busca por ese código para seguir abriendo el mismo inmueble.
+function codigoDeId(id) {
+  const partes = String(id || "").split("-");
+  return partes.length > 1 ? partes[partes.length - 1] : "";
+}
+
+function buscarPorCodigo(lista, id) {
+  const cod = codigoDeId(id);
+  if (!cod || cod === "0") return null; // "0" = inmuebles sin link: no es único
+  const encontrados = lista.filter((l) => codigoDeId(l.catalogId) === cod);
+  return encontrados.length === 1 ? encontrados[0] : null;
+}
+
+// Si el inmueble ya no está en la hoja, se recupera tipo, barrio y precio
+// leyendo el propio enlace (ej. "apartamento-valle-del-lili-245-000-000-x9k2").
+function datosDesdeId(id) {
+  const sinCodigo = String(id || "").split("-").slice(0, -1).join("-");
+  const m = /^(.*?)-*((?:\d+-)*\d+)?$/.exec(sinCodigo) || [];
+  const texto = (m[1] || "").replace(/-+$/, "");
+  const precio = m[2] ? parseInt(m[2].replace(/-/g, ""), 10) : 0;
+  let tipo = "";
+  let barrio = texto;
+  const tipos = [...new Set(todosLosInmuebles.map((l) => l.tipo))].sort((a, b) => b.length - a.length);
+  for (const t of tipos) {
+    const s = slugify(t).replace(/-+$/, "");
+    if (s && (texto === s || texto.startsWith(s + "-"))) { tipo = t; barrio = texto.slice(s.length + 1); break; }
+  }
+  const barrioReal = todosLosInmuebles.map((l) => l.barrio).find((b) => slugify(b).replace(/^-+|-+$/g, "") === barrio);
+  const bonito = (s) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return { tipo, barrio: barrioReal || (barrio ? bonito(barrio) : ""), precio };
+}
+
+function similaresA(ref, cantidad) {
+  const conPrecio = ref.precio > 0;
+  return allListings
+    .map((l) => {
+      const p = priceForCard(l).amount;
+      let puntos = 0;
+      if (ref.tipo && l.tipo === ref.tipo) puntos += 3;
+      if (ref.barrio && slugify(l.barrio) === slugify(ref.barrio)) puntos += 2;
+      if (conPrecio && p) {
+        const dif = Math.abs(p - ref.precio) / ref.precio;
+        if (dif <= 0.15) puntos += 3; else if (dif <= 0.3) puntos += 2; else if (dif <= 0.5) puntos += 1;
+      }
+      return { l, puntos, dif: conPrecio && p ? Math.abs(p - ref.precio) : 0 };
+    })
+    .filter((x) => x.puntos > 0)
+    .sort((a, b) => b.puntos - a.puntos || a.dif - b.dif)
+    .slice(0, cantidad)
+    .map((x) => x.l);
+}
+
+function noDisponibleHtml(ref, sugeridos) {
+  const precioTxt = ref.precio ? ` · ${formatCOP(ref.precio)}` : "";
+  const descripcion = ref.tipo || ref.barrio
+    ? `${escapeHtml(ref.tipo || "Inmueble")}${ref.barrio ? " en " + escapeHtml(ref.barrio) : ""}${precioTxt}`
+    : "";
+  // Enlace al inventario ya filtrado por tipo y un rango de precio parecido.
+  const p = new URLSearchParams();
+  if (ref.tipo) p.set("tipo", ref.tipo);
+  if (ref.precio >= 20000000) {
+    p.set("precioMin", Math.floor((ref.precio * 0.75) / 1e6));
+    p.set("precioMax", Math.ceil((ref.precio * 1.25) / 1e6));
+  }
+  const urlParecidos = window.location.pathname + (p.toString() ? "?" + p.toString() : "");
+  const msg = `Hola, abrí un inmueble que ya no está disponible${descripcion ? " (" + descripcion.replace(/<[^>]+>/g, "") + ")" : ""}. ¿Me ayudas a encontrar algo parecido?`;
+  return `
+    <div class="nodisp">
+      <div class="nodisp-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
+      </div>
+      <h2 class="nodisp-titulo">Este inmueble ya no está disponible</h2>
+      ${descripcion ? `<p class="nodisp-ref">${descripcion}</p>` : ""}
+      <p class="nodisp-texto">Ya se vendió, se arrendó o salió del inventario.</p>
+      ${sugeridos.length ? `
+        <h3 class="nodisp-sub">Opciones parecidas disponibles</h3>
+        <div class="detail-similar-grid nodisp-grid">${sugeridos.map(miniCardHtml).join("")}</div>
+      ` : ""}
+      <div class="nodisp-acciones">
+        ${ref.tipo || ref.precio ? `<a class="nodisp-btn primario" href="${escapeAttr(urlParecidos)}">Ver más opciones parecidas</a>` : ""}
+        <a class="nodisp-btn" href="${escapeAttr(window.location.pathname)}">Ver todo el inventario</a>
+        ${whatsappConfigured() ? `
+          <a class="nodisp-btn whatsapp track-contact" target="_blank" rel="noopener"
+             data-tipo="${escapeAttr(ref.tipo || "Inmueble")}" data-barrio="${escapeAttr(ref.barrio || "")}" data-price="${ref.precio || ""}"
+             href="${escapeAttr(whatsappLink(msg))}">Pedir ayuda por WhatsApp</a>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function showNoDisponible(id, mode) {
+  // Si sigue en la hoja (vendido/arrendado), sus datos reales; si se borró,
+  // lo que se pueda leer del enlace.
+  const enHoja = todosLosInmuebles.find((l) => l.catalogId === id) || buscarPorCodigo(todosLosInmuebles, id);
+  const ref = enHoja
+    ? { tipo: enHoja.tipo, barrio: enHoja.barrio, precio: priceForCard(enHoja).amount }
+    : datosDesdeId(id);
+  currentDetailId = id;
+  const overlay = document.getElementById("detail-overlay");
+  document.getElementById("detail-content").innerHTML = noDisponibleHtml(ref, similaresA(ref, 4));
+  overlay.hidden = false;
+  document.body.classList.add("no-scroll");
+  overlay.scrollTop = 0;
+  if (mode === "push") window.history.pushState({ ver: id }, "", urlWithVer(id));
+  else if (mode === "replace") window.history.replaceState({ ver: id }, "", urlWithVer(id));
+}
+
 function openDetail(id, { mode = "push" } = {}) {
-  const listing = allListings.find((l) => l.catalogId === id);
-  if (!listing) return;
+  let listing = allListings.find((l) => l.catalogId === id);
+  if (!listing) {
+    // ¿Es un enlace viejo del mismo inmueble (cambió el precio/barrio/tipo)?
+    listing = buscarPorCodigo(allListings, id);
+    if (listing) {
+      if (mode === "none") mode = "replace"; // corrige la URL al ID nuevo
+    } else {
+      showNoDisponible(id, mode);
+      return;
+    }
+  }
+  id = listing.catalogId;
 
   currentDetailId = id;
   carouselIndex = 0;
@@ -883,6 +1006,7 @@ function wireDetailOverlay() {
   });
 }
 let allListings = [];
+let todosLosInmuebles = []; // incluye vendidos/arrendados (para enlaces viejos)
 let filtersInitialized = false;
 let filterState = {
   search: "", tipo: "", parqueadero: "", servicio: "", credito: "",
@@ -1162,6 +1286,7 @@ async function loadAndRender() {
     // Solo se listan inmuebles disponibles (Vendido/Arrendado no se muestran
     // como tarjetas, pero sí cuentan para el banner de ventas recientes)
     allListings = allRows.filter((r) => !r.estado || r.estado.toLowerCase().includes("disponible"));
+    todosLosInmuebles = allRows;
 
     document.getElementById("loading-state").hidden = true;
     renderSalesBanner(allRows);
