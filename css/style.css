@@ -940,3 +940,27 @@ body.no-scroll .site-nav-toggle { display: none; }
 @media (max-width: 600px) {
   .lightbox-prev, .lightbox-next { display: none; } /* en celular se desliza con el dedo */
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Enlace de un inmueble que ya no está disponible
+   ───────────────────────────────────────────────────────────── */
+.nodisp { padding: 44px 22px 26px; text-align: center; }
+.nodisp-icono {
+  width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%;
+  background: var(--paper); color: var(--forest); display: grid; place-items: center;
+}
+.nodisp-icono svg { width: 28px; height: 28px; }
+.nodisp-titulo { font-family: var(--font-display); font-weight: 500; font-size: 24px; color: var(--forest-dark); margin: 0 0 8px; }
+.nodisp-ref { display: inline-block; background: var(--paper); border-radius: 999px; padding: 5px 14px; font-size: 14px; font-weight: 600; color: var(--ink); margin: 0 0 10px; text-decoration: line-through; text-decoration-color: rgba(35, 43, 34, 0.35); }
+.nodisp-texto { color: var(--muted); font-size: 15px; margin: 0 auto 22px; max-width: 420px; }
+.nodisp-sub { font-size: 14px; font-weight: 600; margin: 0 0 12px; text-align: left; }
+.nodisp-grid { text-align: left; margin-bottom: 22px; }
+.nodisp-acciones { display: flex; flex-direction: column; gap: 10px; }
+.nodisp-btn {
+  display: block; padding: 13px 16px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; background: var(--card);
+}
+.nodisp-btn:hover { border-color: var(--forest); }
+.nodisp-btn.primario { background: var(--forest); border-color: var(--forest); color: #fff; }
+.nodisp-btn.primario:hover { background: var(--forest-dark); }
+.nodisp-btn.whatsapp { color: #12753a; border-color: #bfe5cc; background: #effaf2; }
