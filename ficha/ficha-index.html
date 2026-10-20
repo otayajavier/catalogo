@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Ficha técnica</title>
+<link rel="stylesheet" href="ficha.css?v=1">
+</head>
+<body>
+<main class="ficha" id="ficha">
+  <p class="estado" id="estado">Cargando ficha…</p>
+</main>
+
+<div class="visor" id="visor" hidden role="dialog" aria-modal="true" aria-label="Fotos ampliadas">
+  <button type="button" class="visor-btn visor-cerrar" id="visor-cerrar" aria-label="Cerrar">✕</button>
+  <span class="visor-contador" id="visor-contador"></span>
+  <button type="button" class="visor-btn visor-ant" id="visor-ant" aria-label="Foto anterior">‹</button>
+  <img id="visor-img" alt="">
+  <button type="button" class="visor-btn visor-sig" id="visor-sig" aria-label="Foto siguiente">›</button>
+</div>
+
+<script src="../js/config.js?v=4"></script>
+<script src="ficha.js?v=1"></script>
+</body>
+</html>
