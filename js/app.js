@@ -603,7 +603,7 @@ function detailHtml(listing) {
               ${whatsappConfigured() ? `
                 <button type="button" class="detail-whatsapp" id="detail-lead-toggle">
                   ${ICONS.wa}
-                  Quiero verlo por WhatsApp
+                  Quiero conocer este inmueble
                 </button>
                 <form class="detail-lead-form" id="detail-lead-form" hidden>
                   <input class="detail-lead-input" type="text" id="dl-nombre" placeholder="Tu nombre" required autocomplete="name">
@@ -645,7 +645,7 @@ function detailHtml(listing) {
       ${whatsappConfigured() ? `
         <div class="fi-barra">
           <div><span>${etiquetaPrecio}</span><strong>${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</strong></div>
-          <button type="button" class="fi-barra-wa" id="fi-barra-wa">${ICONS.wa}Quiero verlo</button>
+          <button type="button" class="fi-barra-wa" id="fi-barra-wa">${ICONS.wa}Quiero conocerlo</button>
         </div>` : ""}
     </div>
   `;
