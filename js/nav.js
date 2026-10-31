@@ -1,16 +1,36 @@
 // ─────────────────────────────────────────────────────────────
 // Menú compartido (☰) — se inyecta en todas las páginas del sitio.
-// Usa rutas ABSOLUTAS desde la raíz del repo (/catalogo/...) para que
-// funcione igual sin importar qué tan "profunda" esté la página actual.
-// Si el repo alguna vez cambia de nombre, este es el único lugar a ajustar.
+// Las rutas se calculan desde la ubicación de este mismo archivo
+// (js/nav.js), así el sitio funciona igual en la raíz de un dominio
+// propio o dentro de una subcarpeta (usuario.github.io/repo/).
 // ─────────────────────────────────────────────────────────────
+const SITE_BASE = (() => {
+  try {
+    if (document.currentScript && document.currentScript.src) {
+      return new URL("../", document.currentScript.src).pathname;
+    }
+  } catch (e) { /* usa la raíz */ }
+  return "/";
+})();
+
 const SITE_LINKS = [
-  { href: "/catalogo/inicio/", label: "Inicio" },
-  { href: "/catalogo/", label: "Inventario" },
-  { href: "/catalogo/solicitudes/", label: "Solicitudes" },
-  { href: "/catalogo/credito/", label: "Calculadora de crédito" },
-  { href: "/catalogo/consulta/", label: "¿Buscas algo específico?" },
+  { href: SITE_BASE + "inicio/", label: "Inicio" },
+  { href: SITE_BASE, label: "Inventario" },
+  { href: SITE_BASE + "solicitudes/", label: "Solicitudes" },
+  { href: SITE_BASE + "credito/", label: "Calculadora de crédito" },
+  { href: SITE_BASE + "consulta/", label: "¿Buscas algo específico?" },
 ];
+
+// Colores de la marca (opcionales, vienen de js/config.js).
+function aplicarColoresMarca() {
+  if (typeof CONFIG === "undefined") return;
+  const root = document.documentElement.style;
+  if (CONFIG.COLOR_PRIMARIO) {
+    root.setProperty("--forest", CONFIG.COLOR_PRIMARIO);
+    root.setProperty("--tag-venta", CONFIG.COLOR_PRIMARIO);
+  }
+  if (CONFIG.COLOR_PRIMARIO_OSCURO) root.setProperty("--forest-dark", CONFIG.COLOR_PRIMARIO_OSCURO);
+}
 
 function renderSiteNav() {
   const root = document.getElementById("site-nav-root");
@@ -83,5 +103,6 @@ function renderBrand() {
   inner.prepend(brand);
 }
 
+aplicarColoresMarca();
 renderSiteNav();
 renderBrand();
