@@ -58,7 +58,7 @@ function rowsToSolicitudes(values) {
     presupuesto: findCol(headers, "presup"),
     formaPago: findCol(headers, "forma de pago", "forma pago"),
     entidad: findCol(headers, "entidad"),
-    observaciones: findCol(headers, "observacion"),
+    observaciones: findCol(headers, "observacion", "busca"),
     ultimoContacto: findCol(headers, "contacto"),
     estado: findCol(headers, "estado"), // opcional — puede no existir todavía
     // "Cliente" y "Teléfono" existen en el Sheet pero deliberadamente NO se
