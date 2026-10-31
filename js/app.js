@@ -161,14 +161,23 @@ function shortHash(str) {
 function makeCatalogId(rawTipo, rawBarrio, rawPrecio, uniqueSeed) {
   return `${slugify(`${rawTipo}-${rawBarrio}-${rawPrecio}`)}-${shortHash(uniqueSeed)}`;
 }
+// Con el ID del Portafolio (P0001…) el enlace queda "tipo-barrio-P0001", igual
+// que los links del feed de Meta (?ver=...). El ID no cambia aunque se edite
+// el precio, el barrio o el tipo.
+function slugLimpio(str) {
+  return slugify(str).replace(/^-+|-+$/g, "");
+}
+function makeCatalogIdFromId(rawTipo, rawBarrio, id) {
+  return [slugLimpio(rawTipo), slugLimpio(rawBarrio), id].filter(Boolean).join("-").replace(/-+/g, "-");
+}
 
 // ─────────────────────────────────────────────────────────────
 // Carga de datos desde Google Sheets API
 // ─────────────────────────────────────────────────────────────
 async function fetchSheetData() {
-  if (!CONFIG.API_KEY || CONFIG.API_KEY === "PEGA_AQUI_TU_API_KEY") {
+  if (!CONFIG.API_KEY || /^PENDIENTE|^PEGA_AQUI/.test(CONFIG.API_KEY) || !CONFIG.SPREADSHEET_ID || /^PENDIENTE/.test(CONFIG.SPREADSHEET_ID)) {
     document.getElementById("loading-state").textContent =
-      "Falta configurar la API key en js/config.js (ver README.md).";
+      "Falta configurar SPREADSHEET_ID y API_KEY en js/config.js (ver INSTALAR-CLIENTE-NUEVO.md).";
     return null;
   }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(CONFIG.RANGE)}?key=${CONFIG.API_KEY}`;
@@ -188,7 +197,9 @@ function rowsToPublicListings(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0].map(normalizeHeader);
 
+  // Encabezados del espejo público (los pone el backend desde la hoja Maestra).
   const col = {
+    id: headers.findIndex((h) => h === "id"),
     tipo: findCol(headers, "tipo"),
     barrio: findCol(headers, "barrio", "zona"),
     precio: headers.findIndex((h) => h.includes("precio") && !h.includes("arriendo")),
@@ -203,41 +214,46 @@ function rowsToPublicListings(values) {
     servicio: findCol(headers, "servicio"),
     credito: findCol(headers, "credito"),
     linkFicha: findCol(headers, "link", "ficha"),
-    imagen: findCol(headers, "imagen"),
-    masFotos: findCol(headers, "foto"),
+    imagen: findCol(headers, "imagen"), // columna antigua; el espejo nuevo solo trae "Fotos"
+    fotos: findCol(headers, "fotos", "foto"),
     fechaVenta: findCol(headers, "fecha"),
   };
+  const celda = (row, i) => (i > -1 ? String(row[i] || "").trim() : "");
 
   const allRows = values
     .slice(1)
     .filter((row) => row.some((cell) => cell && cell.trim && cell.trim() !== ""))
     .map((row) => {
-      const imagenPrincipal = (row[col.imagen] || "").trim();
-      const masFotos = (row[col.masFotos] || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const photos = [imagenPrincipal, ...masFotos].filter((v, i, arr) => v && arr.indexOf(v) === i);
+      // "Fotos" trae todas las URLs separadas por salto de línea (o coma);
+      // la primera es la imagen principal de la tarjeta.
+      const fotosCelda = celda(row, col.fotos).split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
+      const photos = [celda(row, col.imagen), ...fotosCelda].filter((v, i, arr) => v && arr.indexOf(v) === i);
+      const id = celda(row, col.id);
+      const tipo = celda(row, col.tipo) || "Inmueble";
+      const barrio = celda(row, col.barrio) || "Cali";
 
       return {
-        catalogId: makeCatalogId(row[col.tipo], row[col.barrio], row[col.precio], row[col.linkFicha]),
-        tipo: row[col.tipo] || "Inmueble",
-        barrio: row[col.barrio] || "Cali",
+        id,
+        catalogId: id
+          ? makeCatalogIdFromId(tipo, barrio, id)
+          : makeCatalogId(tipo, barrio, row[col.precio], row[col.linkFicha]),
+        tipo,
+        barrio,
         precio: parseCOP(row[col.precio]),
         canon: parseCOP(row[col.canon]),
         area: parseFloat(row[col.area]) || 0,
         habitaciones: parseInt(row[col.habitaciones], 10) || 0,
         banos: parseInt(row[col.banos], 10) || 0,
-        parqueadero: (row[col.parqueadero] || "").trim(),
-        piso: (row[col.piso] || "").trim(),
-        estrato: (row[col.estrato] || "").trim(),
-        estado: (row[col.estado] || "").trim(),
-        servicio: (row[col.servicio] || "").trim(),
-        credito: (row[col.credito] || "").trim().toLowerCase(),
-        linkFicha: (row[col.linkFicha] || "").trim(),
-        imagen: imagenPrincipal,
+        parqueadero: celda(row, col.parqueadero),
+        piso: celda(row, col.piso),
+        estrato: celda(row, col.estrato),
+        estado: celda(row, col.estado),
+        servicio: celda(row, col.servicio),
+        credito: celda(row, col.credito).toLowerCase(),
+        linkFicha: celda(row, col.linkFicha),
+        imagen: photos[0] || "",
         photos,
-        fechaVenta: (row[col.fechaVenta] || "").trim(),
+        fechaVenta: celda(row, col.fechaVenta),
       };
     });
 
@@ -486,7 +502,7 @@ function detailHtml(listing) {
             <p class="detail-lead-error" id="detail-lead-error" hidden>Completa los 3 campos para continuar.</p>
           </form>` : ""}
         ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
-        <a class="detail-crm-link" href="/catalogo/credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
+        <a class="detail-crm-link" href="${SITE_BASE}credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
       </div>
 
       ${similares.length ? `
@@ -499,16 +515,7 @@ function detailHtml(listing) {
 }
 
 function enviarLeadASheet(data) {
-  if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
-  // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
-  // "keepalive": el envío se completa aunque enseguida se abra WhatsApp.
-  fetch(CONFIG.LEADS_WEBAPP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    keepalive: true,
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(Object.assign({}, data, datosParaMeta())),
-  }).catch(() => {});
+  enviarLeadBackend(data); // js/lead-api.js
 }
 
 function wireDetailLeadForm(listing) {
@@ -543,7 +550,7 @@ function wireDetailLeadForm(listing) {
     const inmuebleUrl = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
 
     const eventId = trackPixel("Lead", {
-      content_ids: [listing.catalogId],
+      content_ids: [listing.id || listing.catalogId],
       content_name: inmuebleTexto,
       value: price || undefined,
       currency: "COP",
@@ -844,8 +851,10 @@ function buscarPorCodigo(lista, id) {
 function datosDesdeId(id) {
   const sinCodigo = String(id || "").split("-").slice(0, -1).join("-");
   const m = /^(.*?)-*((?:\d+-)*\d+)?$/.exec(sinCodigo) || [];
-  const texto = (m[1] || "").replace(/-+$/, "");
-  const precio = m[2] ? parseInt(m[2].replace(/-/g, ""), 10) : 0;
+  let texto = (m[1] || "").replace(/-+$/, "");
+  let precio = m[2] ? parseInt(m[2].replace(/-/g, ""), 10) : 0;
+  // Los enlaces nuevos no llevan precio; un número chico al final es parte del barrio.
+  if (precio < 1000000) { texto = sinCodigo.replace(/-+$/, ""); precio = 0; }
   let tipo = "";
   let barrio = texto;
   const tipos = [...new Set(todosLosInmuebles.map((l) => l.tipo))].sort((a, b) => b.length - a.length);
@@ -970,7 +979,7 @@ function openDetail(id, { mode = "push" } = {}) {
   else if (mode === "replace") window.history.replaceState({ ver: id }, "", urlWithVer(id));
 
   trackPixel("ViewContent", {
-    content_ids: [listing.catalogId],
+    content_ids: [listing.id || listing.catalogId],
     content_type: "product",
     content_name: `${listing.tipo} en ${listing.barrio}`,
     value: priceForCard(listing).amount || undefined,
