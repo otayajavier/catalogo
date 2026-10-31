@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/tema.css?v=1">
 </head>
 <body>
 
@@ -16,8 +17,9 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-    <span class="topbar-title">Inmuebles Disponibles Cali Sur</span>
-    <p class="topbar-subtitle">Portafolio actualizado en vivo — venta y arriendo.</p>
+    <p class="topbar-eyebrow">Portafolio actualizado en vivo</p>
+    <h1 class="topbar-title">Inmuebles disponibles en el Sur de Cali</h1>
+    <p class="topbar-subtitle">Venta y arriendo. Filtra por lo que buscas y abre la ficha para ver fotos, cifras y cuota estimada.</p>
   </div>
 </header>
 
@@ -36,6 +38,13 @@
       <option value="si">Aplica crédito</option>
       <option value="no">Solo al contado</option>
       <option value="revisar">Por revisar</option>
+    </select>
+    <select id="f-hab" class="pill pill-select" aria-label="Habitaciones">
+      <option value="">Habitaciones</option>
+      <option value="1">1 o más</option>
+      <option value="2">2 o más</option>
+      <option value="3">3 o más</option>
+      <option value="4">4 o más</option>
     </select>
     <select id="f-servicio" class="pill pill-select" aria-label="Venta o arriendo">
       <option value="">Venta/Arriendo</option>
@@ -108,9 +117,9 @@
   </div>
 </div>
 
-<script src="js/config.js?v=5"></script>
-<script src="js/nav.js?v=4"></script>
+<script src="js/config.js?v=6"></script>
+<script src="js/nav.js?v=5"></script>
 <script src="js/lead-api.js?v=1"></script>
-<script src="js/app.js?v=10"></script>
+<script src="js/app.js?v=11"></script>
 </body>
 </html>

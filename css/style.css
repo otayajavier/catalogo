@@ -37,9 +37,6 @@ body {
   max-width: 1220px;
   margin: 0 auto;
 }
-/* La marca deja espacio al botón de menú (☰), que es fixed; el título
-   va debajo, alineado con el contenido de la página */
-.topbar-inner > .brand { margin-left: 46px; }
 
 .topbar-title {
   display: block;
@@ -470,7 +467,6 @@ body {
 
 /* ── Overlay de la ficha de detalle ───────────────────────────── */
 body.no-scroll { overflow: hidden; }
-body.no-scroll .site-nav-toggle { display: none; }
 
 .detail-overlay {
   position: fixed;
@@ -744,65 +740,6 @@ body.no-scroll .site-nav-toggle { display: none; }
 }
 .mini-card-body strong { font-family: var(--font-display); font-size: 14px; color: var(--forest-dark); }
 .mini-card-body span { font-size: 12px; color: var(--muted); }
-
-/* ── Menú compartido (☰) ───────────────────────────────────── */
-.site-nav-toggle {
-  position: fixed;
-  top: 14px;
-  left: 16px;
-  z-index: 50;
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--forest-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-.site-nav-toggle:hover { border-color: var(--forest); }
-.site-nav-toggle:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
-.site-nav-toggle-hidden { transform: translateX(-56px); opacity: 0; pointer-events: none; }
-
-.site-nav-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 48;
-  background: rgba(20, 24, 18, 0.4);
-}
-.site-nav-backdrop[hidden] { display: none; }
-
-.site-nav-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 49;
-  width: min(260px, 80vw);
-  background: var(--card);
-  box-shadow: 4px 0 24px rgba(0,0,0,0.15);
-  padding: 64px 24px 24px;
-}
-.site-nav-panel[hidden] { display: none; }
-
-.site-nav-panel nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.site-nav-panel a {
-  padding: 11px 12px;
-  border-radius: 6px;
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-}
-.site-nav-panel a:hover { background: var(--paper); }
-.site-nav-panel a.active { background: var(--forest); color: #fff; }
 
 /* ── Campos de formulario compartidos (consulta + calculadora) ── */
 .lead-label {

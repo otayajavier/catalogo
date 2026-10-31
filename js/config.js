@@ -39,7 +39,16 @@ const CONFIG = {
   MARCA_NOMBRE: "Javier Otaya",
   MARCA_FRASE: "Agente inmobiliario · Sur de Cali",
   LOGO_URL: "",          // ej. "img/logo.png" (ruta relativa a la raíz del sitio)
-  FOTO_AGENTE_URL: "",   // ej. "img/asesor.jpg"
+  FOTO_AGENTE_URL: "img/javier.jpg",   // ej. "img/asesor.jpg"
+
+  // Datos del asesor para portada y ficha (déjalos vacíos para ocultarlos).
+  AGENTE_CARGO: "Asesor inmobiliario",
+  AGENTE_ANIOS: 3,
+  AGENTE_COLEGAS: 300,
+  AGENTE_TRANSACCIONES: 30,
+  AGENTE_ANIO_REFERENCIA: 2026,
+  // Zonas de la portada ("Explora por zona"): se buscan en el catálogo.
+  ZONAS_DESTACADAS: ["Valle del Lili", "Bochalema", "Ciudad Meléndez"],
 
   // Colores (opcionales). Vacío = los colores originales del catálogo.
   COLOR_PRIMARIO: "",

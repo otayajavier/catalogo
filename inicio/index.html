@@ -3,62 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Javier Otaya — Agente Inmobiliario en el Sur de Cali</title>
-<meta name="description" content="Compra, venta, arriendo, créditos y avalúos de inmuebles en el Sur de Cali. Portafolio actualizado en vivo.">
+<title>Javier Otaya — Agente inmobiliario en el Sur de Cali</title>
+<meta name="description" content="Compra, venta, arriendo y crédito hipotecario en el Sur de Cali, con el respaldo de una red de más de 300 colegas e inmobiliarias. Portafolio actualizado en vivo.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=6">
-<link rel="stylesheet" href="inicio.css?v=3">
+<link rel="stylesheet" href="../css/style.css?v=9">
+<link rel="stylesheet" href="../css/tema.css?v=1">
+<link rel="stylesheet" href="inicio.css?v=4">
 </head>
-<body>
+<body class="pagina-inicio">
 
 <div id="site-nav-root"></div>
 
-<header class="topbar">
-  <div class="topbar-inner">
-  </div>
-</header>
+<main>
+  <!-- PORTADA -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-texto">
+        <p class="hero-eyebrow" id="hero-eyebrow">Sur de Cali · Vivienda media</p>
+        <h1>Tu hogar en el Sur de Cali, con una red de más de <em><span data-colegas>300</span> colegas</em> detrás.</h1>
+        <p class="hero-sub">Te acompaño a comprar, vender o arrendar, y en el crédito hipotecario: del primer recorrido a la firma.</p>
 
-<main class="inicio-wrap">
-  <section class="inicio-hero">
-    <img class="inicio-foto" id="inicio-foto" hidden>
-    <div class="inicio-hero-text">
-    <h1>Tu aliado experto para comprar, vender o valorar en el Sur de Cali</h1>
-    <p>Acompaño todo tu proceso de principio a fin — desde la búsqueda del inmueble ideal en Valle del Lili y Bochalema, hasta el estudio de crédito y el papeleo.</p>
-    <div class="inicio-cta">
-      <a href="../credito/" class="inicio-btn primary">Calcular crédito hipotecario 📊</a>
-      <a href="../" class="inicio-btn secondary">Buscar inmueble disponible 🏠</a>
-    </div>
+        <form class="buscador" id="buscador" action="../" method="get">
+          <div class="buscador-modo" role="radiogroup" aria-label="Tipo de operación">
+            <label><input type="radio" name="servicio" value="venta" checked><span>Comprar</span></label>
+            <label><input type="radio" name="servicio" value="arriendo"><span>Arrendar</span></label>
+          </div>
+          <div class="buscador-campos">
+            <label class="campo"><span>Zona</span>
+              <select name="q" id="b-zona"><option value="">Todas las zonas</option></select>
+            </label>
+            <label class="campo"><span>Precio máximo</span>
+              <select name="precioMax" id="b-precio"></select>
+            </label>
+            <label class="campo"><span>Habitaciones</span>
+              <select name="hab">
+                <option value="">Cualquiera</option>
+                <option value="2">2 o más</option>
+                <option value="3">3 o más</option>
+                <option value="4">4 o más</option>
+              </select>
+            </label>
+            <button type="submit" class="buscador-ir">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>
+              Buscar inmuebles
+            </button>
+          </div>
+        </form>
+      </div>
+      <figure class="hero-foto" id="hero-foto" hidden>
+        <img id="inicio-foto" alt="">
+        <figcaption><strong id="foto-nombre"></strong><span id="foto-cargo"></span></figcaption>
+      </figure>
     </div>
   </section>
 
-  <section class="inicio-services">
-    <h2>Servicios</h2>
-    <div class="services-grid">
-      <article class="service-card">
-        <h3>📊 Créditos</h3>
-        <p>Te orientamos en el proceso de crédito hipotecario. <a href="../credito/" class="service-link">¡Prueba la calculadora aquí!</a></p>
+  <!-- CIFRAS -->
+  <section class="cifras" id="cifras" hidden>
+    <div class="cifras-inner" id="cifras-inner"></div>
+  </section>
+
+  <!-- DISPONIBLES AHORA -->
+  <section class="bloque" id="bloque-destacados" hidden>
+    <div class="bloque-cab">
+      <h2>Disponibles ahora</h2>
+      <a class="enlace-flecha" href="../">Ver todos los inmuebles <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="destacados" id="destacados"></div>
+  </section>
+
+  <!-- ZONAS -->
+  <section class="bloque" id="bloque-zonas" hidden>
+    <div class="bloque-cab"><h2>Explora por zona</h2></div>
+    <div class="zonas" id="zonas"></div>
+  </section>
+
+  <!-- SERVICIOS -->
+  <section class="bloque">
+    <div class="bloque-cab"><h2>Cómo te acompaño</h2></div>
+    <div class="servicios">
+      <article class="servicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9h14v-9M3 19h18M9 19v-5h6v5"/></svg>
+        <h3>Créditos</h3>
+        <p>Te orientamos en el proceso de crédito hipotecario. <a href="../credito/">Prueba la calculadora para ver tu cuota.</a></p>
       </article>
-      <article class="service-card">
-        <h3>🏠 Venta</h3>
+      <article class="servicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6 10v9h12v-9M10 19v-5h4v5"/></svg>
+        <h3>Venta</h3>
         <p>Publicación, negociación y cierre de tu inmueble, con acompañamiento en cada paso.</p>
       </article>
-      <article class="service-card">
-        <h3>🔑 Arriendo</h3>
+      <article class="servicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>
+        <h3>Arriendo</h3>
         <p>Encuentra inquilinos calificados o el inmueble ideal para arrendar, sin vueltas.</p>
       </article>
-      <article class="service-card">
-        <h3>📋 Avalúos</h3>
+      <article class="servicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18L18 4l2 2L6 20H4v-2zM13 7l2 2M8 20h12"/></svg>
+        <h3>Avalúos</h3>
         <p>Estimación del valor real de tu inmueble, basada en el mercado actual de tu zona.</p>
       </article>
     </div>
   </section>
 
-  <section class="inicio-band">
-    <h2>¿Buscas algo que no está en el catálogo?</h2>
-    <p>Revisa las solicitudes activas de otros compradores, o deja la tuya.</p>
-    <a href="../solicitudes/" class="inicio-btn secondary">Ver solicitudes</a>
+  <!-- PROCESO -->
+  <section class="bloque bloque-oscuro">
+    <div class="bloque-cab"><h2>Del primer recorrido a las llaves</h2></div>
+    <ol class="pasos">
+      <li><span class="paso-n">1</span><h3>Me cuentas qué buscas</h3><p>Zona, presupuesto y lo que no es negociable. Con eso armo tu búsqueda.</p></li>
+      <li><span class="paso-n">2</span><h3>Visitamos y comparamos</h3><p>Te muestro opciones del catálogo y de mi red de colegas, y recorremos las mejores.</p></li>
+      <li><span class="paso-n">3</span><h3>Crédito y negociación</h3><p>Te oriento con el estudio de crédito y negocio por ti el mejor cierre.</p></li>
+      <li><span class="paso-n">4</span><h3>Escrituras y entrega</h3><p>Te acompaño en el papeleo hasta que tengas las llaves en la mano.</p></li>
+    </ol>
+  </section>
+
+  <!-- RED DE COLEGAS -->
+  <section class="bloque">
+    <div class="banda">
+      <h2>¿No está en el catálogo? Lo busco en mi red de más de <span data-colegas>300</span> colegas e inmobiliarias.</h2>
+      <p>Revisa lo que otros compradores están buscando, o deja tu solicitud y te escribo cuando aparezca algo para ti.</p>
+      <div class="banda-botones">
+        <a class="btn btn-primario" href="../consulta/">Dejar mi solicitud</a>
+        <a class="btn btn-claro" href="../solicitudes/">Ver solicitudes</a>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -68,8 +136,8 @@
   </svg>
 </a>
 
-<script src="../js/config.js?v=5"></script>
-<script src="../js/nav.js?v=4"></script>
-<script src="inicio.js?v=2"></script>
+<script src="../js/config.js?v=6"></script>
+<script src="../js/nav.js?v=5"></script>
+<script src="inicio.js?v=3"></script>
 </body>
 </html>

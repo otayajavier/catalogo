@@ -217,6 +217,7 @@ function rowsToPublicListings(values) {
     imagen: findCol(headers, "imagen"), // columna antigua; el espejo nuevo solo trae "Fotos"
     fotos: findCol(headers, "fotos", "foto"),
     fechaVenta: findCol(headers, "fecha"),
+    observaciones: findCol(headers, "observacion"),
   };
   const celda = (row, i) => (i > -1 ? String(row[i] || "").trim() : "");
 
@@ -254,6 +255,7 @@ function rowsToPublicListings(values) {
         imagen: photos[0] || "",
         photos,
         fechaVenta: celda(row, col.fechaVenta),
+        observaciones: celda(row, col.observaciones),
       };
     });
 
@@ -352,32 +354,47 @@ function pisoOrNivelesLabel(listing) {
   return `Piso ${escapeHtml(listing.piso)}`;
 }
 
+function cardMeta(icon, texto) {
+  return `<span class="card-meta-item">${ICONS[icon]}${texto}</span>`;
+}
+
 function cardHtml(listing) {
   const img = listing.imagen || PLACEHOLDER_IMG;
   const price = priceForCard(listing);
   const badgeClass = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "arriendo" : "venta";
-  const badgeText = listing.servicio || "Disponible";
+  const badgeText = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "Arriendo" : (listing.servicio || "Disponible");
+  const titulo = `${listing.tipo} en ${listing.barrio}`;
+  const credito = creditoBucket(listing.credito);
 
-  const specs = [];
-  if (listing.area) specs.push(`${listing.area} m²`);
-  if (listing.habitaciones) specs.push(`${listing.habitaciones} hab.`);
-  if (listing.banos) specs.push(`${listing.banos} baños`);
-  if (listing.piso) specs.push(pisoOrNivelesLabel(listing));
-  if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push(`Parqueadero ${escapeHtml(listing.parqueadero)}`);
-  specs.push(creditoLabel(listing.credito));
+  const meta = [];
+  if (listing.habitaciones) meta.push(cardMeta("bed", `${listing.habitaciones} hab.`));
+  if (listing.banos) meta.push(cardMeta("bath", `${listing.banos} baños`));
+  if (listing.area) meta.push(cardMeta("area", `${listing.area} m²`));
+  if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") meta.push(cardMeta("car", `${escapeHtml(listing.parqueadero)} parq.`));
+  if (listing.piso) meta.push(cardMeta("layers", pisoOrNivelesLabel(listing)));
+
+  const waMsg = `Hola Javier, me interesa el ${titulo}${listing.id ? ` (Ref. ${listing.id})` : ""}.`;
+  const wa = whatsappConfigured()
+    ? `<a class="card-whatsapp track-contact" href="${escapeAttr(whatsappLink(waMsg))}" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp sobre este inmueble" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount || ""}">${ICONS.wa}</a>`
+    : "";
 
   return `
     <article class="card">
       <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
-        <img src="${escapeAttr(img)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+        <img src="${escapeAttr(img)}" alt="${escapeAttr(titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
         <span class="card-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
       </button>
       <div class="card-body">
-        <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
-        <h3 class="card-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h3>
-        <div class="card-specs">${specs.map((s) => `<span>${s}</span>`).join("")}</div>
+        <div class="card-top">
+          <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
+          ${credito === "si" ? `<span class="card-credit">Aplica crédito</span>` : ""}
+        </div>
+        <h3 class="card-title">${escapeHtml(titulo)}</h3>
+        <p class="card-zona">${ICONS.pin}${escapeHtml(listing.barrio)}</p>
+        <div class="card-meta">${meta.join("")}</div>
         <div class="card-actions">
-          <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa →</button>
+          <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa <span aria-hidden="true">→</span></button>
+          ${wa}
         </div>
       </div>
     </article>
@@ -393,6 +410,11 @@ const ICONS = {
   bath: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3ZM6 12V6a2 2 0 0 1 2-2c1 0 1.6.6 2 1M3 19h18"/></svg>`,
   layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5"/></svg>`,
   car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17M6 17v2M18 17v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/></svg>`,
+  share: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>`,
+  calc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>`,
+  wa: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.3-4A8 8 0 1 1 8.5 19L4 20z"/></svg>`,
   credito: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>`,
 };
 
@@ -435,6 +457,7 @@ function renderCarousel() {
   const dots = document.getElementById("detail-carousel-dots");
   if (!track) return;
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  document.querySelectorAll("#fi-miniaturas button").forEach((m, i) => m.classList.toggle("active", i === carouselIndex));
   if (!dots) return; // con una sola foto no hay puntos
   dots.querySelectorAll("button").forEach((d, i) => d.classList.toggle("active", i === carouselIndex));
 }
@@ -444,65 +467,174 @@ function moveCarousel(delta) {
   renderCarousel();
 }
 
+// Cuota de ejemplo con los mismos valores iniciales de la calculadora
+// (80 % financiado, 14 % E.A., 20 años). Solo es ilustrativa.
+const CUOTA_EJEMPLO = { financiado: 0.8, tasaEA: 14, anios: 20 };
+function cuotaEjemplo(precio) {
+  const i = Math.pow(1 + CUOTA_EJEMPLO.tasaEA / 100, 1 / 12) - 1;
+  const n = CUOTA_EJEMPLO.anios * 12;
+  const monto = precio * CUOTA_EJEMPLO.financiado;
+  return Math.round((monto * i) / (1 - Math.pow(1 + i, -n)));
+}
+
+let visitaElegida = "";
+
+function nombreAsesorCorto() {
+  return ((CONFIG.MARCA_NOMBRE || "").split(/\s+/)[0]) || "";
+}
+
+function mensajeInteres(listing) {
+  const titulo = `${listing.tipo} en ${listing.barrio}`;
+  const ref = listing.id ? ` (Ref. ${listing.id})` : "";
+  return `Hola${nombreAsesorCorto() ? " " + nombreAsesorCorto() : ""}, me interesa el ${titulo}${ref}.`;
+}
+
+function hechoHtml(icon, valor, etiqueta) {
+  if (!valor) return "";
+  return `<div class="fi-hecho">${ICONS[icon]}<div><strong>${escapeHtml(valor)}</strong><span>${escapeHtml(etiqueta)}</span></div></div>`;
+}
+
+function asesorHtml() {
+  if (!CONFIG.MARCA_NOMBRE) return "";
+  const foto = CONFIG.FOTO_AGENTE_URL ? `<img src="${escapeAttr(rutaSitio(CONFIG.FOTO_AGENTE_URL))}" alt="" class="fi-asesor-foto">` : "";
+  const partes = [];
+  if (CONFIG.AGENTE_ANIOS) partes.push(`${CONFIG.AGENTE_ANIOS} años de experiencia`);
+  const cargo = [CONFIG.AGENTE_CARGO, partes.join("")].filter(Boolean).join(" · ");
+  const lineas = [];
+  if (CONFIG.AGENTE_COLEGAS) lineas.push(`Respaldado por una red de más de ${CONFIG.AGENTE_COLEGAS} colegas e inmobiliarias.`);
+  if (CONFIG.AGENTE_TRANSACCIONES) lineas.push(`+${CONFIG.AGENTE_TRANSACCIONES} transacciones acompañadas${CONFIG.AGENTE_ANIO_REFERENCIA ? " en " + CONFIG.AGENTE_ANIO_REFERENCIA : ""}.`);
+  return `
+    <div class="fi-asesor">
+      ${foto}
+      <div>
+        <strong>${escapeHtml(CONFIG.MARCA_NOMBRE)}</strong>
+        ${cargo ? `<span class="fi-asesor-cargo">${escapeHtml(cargo)}</span>` : ""}
+        ${lineas.length ? `<p>${escapeHtml(lineas.join(" "))}</p>` : ""}
+      </div>
+    </div>`;
+}
+
 function detailHtml(listing) {
   const price = priceForCard(listing);
-  const badgeClass = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "arriendo" : "venta";
-  const similares = findSimilar(listing, allListings, 2);
+  const soloArriendo = isArriendo(listing.servicio) && !isVenta(listing.servicio);
+  const badgeClass = soloArriendo ? "arriendo" : "venta";
+  const badgeText = soloArriendo ? "Arriendo" : (listing.servicio || "Disponible");
+  const similares = findSimilar(listing, allListings, 3);
+  const titulo = `${listing.tipo} en ${listing.barrio}`;
+  const credito = creditoBucket(listing.credito);
+  const tieneFotos = carouselPhotos[0] !== PLACEHOLDER_IMG;
+
+  // Cifras calculadas (solo cuando hay datos suficientes)
+  const precioM2 = !soloArriendo && listing.precio > 0 && listing.area > 0 ? Math.round(listing.precio / listing.area) : 0;
+  const cuota = !soloArriendo && credito !== "no" && listing.precio > 0 ? cuotaEjemplo(listing.precio) : 0;
+  const numeros = (precioM2 || cuota) ? `
+    <section class="fi-seccion">
+      <h3>Los números, claros</h3>
+      <div class="fi-numeros">
+        ${precioM2 ? `<div class="fi-numero"><span class="fi-numero-etq">Precio por metro cuadrado</span><strong>${formatCOP(precioM2)}</strong><small>Se calcula solo: precio ÷ área.</small></div>` : ""}
+        ${cuota ? `<div class="fi-numero"><span class="fi-numero-etq">Cuota estimada con crédito</span><strong>≈ ${formatCOP(cuota)} <small class="inline">/ mes</small></strong><small>Ejemplo ilustrativo (${Math.round(CUOTA_EJEMPLO.financiado * 100)} % financiado, ${CUOTA_EJEMPLO.anios} años, tasa ${CUOTA_EJEMPLO.tasaEA} % E.A.). <a href="${SITE_BASE}credito/?valor=${listing.precio}">Ajustar en la calculadora →</a></small></div>` : ""}
+      </div>
+    </section>` : "";
+
+  const sobre = listing.observaciones ? `
+    <section class="fi-seccion">
+      <h3>Sobre este inmueble</h3>
+      <p class="fi-texto">${escapeHtml(listing.observaciones).replace(/\n+/g, "<br>")}</p>
+    </section>` : "";
+
+  const etiquetaPrecio = soloArriendo ? "Canon de arriendo" : "Precio de venta";
 
   return `
-    <div class="detail-carousel">
-      <div class="detail-carousel-track" id="detail-carousel-track">
-        ${carouselPhotos.map((src) => `<img src="${escapeAttr(src)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" onerror="this.src='${PLACEHOLDER_IMG}'">`).join("")}
-      </div>
-      ${carouselPhotos.length > 1 ? `
-        <button type="button" class="carousel-arrow prev" id="carousel-prev" aria-label="Foto anterior">‹</button>
-        <button type="button" class="carousel-arrow next" id="carousel-next" aria-label="Foto siguiente">›</button>
-        <div class="detail-carousel-dots" id="detail-carousel-dots">
-          ${carouselPhotos.map((_, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"></button>`).join("")}
+    <div class="fi">
+      <button type="button" class="fi-volver" id="fi-volver">← Todos los inmuebles</button>
+      <div class="fi-grid">
+        <div class="fi-main">
+          <div class="detail-carousel">
+            <div class="detail-carousel-track" id="detail-carousel-track">
+              ${carouselPhotos.map((src) => `<img src="${escapeAttr(src)}" alt="${escapeAttr(titulo)}" onerror="this.src='${PLACEHOLDER_IMG}'">`).join("")}
+            </div>
+            ${carouselPhotos.length > 1 ? `
+              <button type="button" class="carousel-arrow prev" id="carousel-prev" aria-label="Foto anterior">‹</button>
+              <button type="button" class="carousel-arrow next" id="carousel-next" aria-label="Foto siguiente">›</button>
+              <div class="detail-carousel-dots" id="detail-carousel-dots">
+                ${carouselPhotos.map((_, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"></button>`).join("")}
+              </div>
+            ` : ""}
+            ${tieneFotos ? `
+              <button type="button" class="carousel-zoom" id="carousel-zoom" aria-label="Ampliar foto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                ${carouselPhotos.length > 1 ? `Ver las ${carouselPhotos.length} fotos` : "Ampliar"}
+              </button>` : ""}
+          </div>
+          ${carouselPhotos.length > 1 ? `
+            <div class="fi-miniaturas" id="fi-miniaturas">
+              ${carouselPhotos.slice(0, 8).map((src, i) => `<button type="button" data-i="${i}" aria-label="Ver foto ${i + 1}"><img src="${escapeAttr(src)}" alt="" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'"></button>`).join("")}
+            </div>` : ""}
+
+          <div class="fi-cabecera">
+            <div class="fi-etiquetas">
+              <span class="fi-etq ${badgeClass}">${escapeHtml(badgeText)}</span>
+              ${credito === "si" ? `<span class="fi-etq credito">Aplica crédito</span>` : ""}
+              <span class="fi-etq disp">Disponible</span>
+            </div>
+            <h2 class="detail-title">${escapeHtml(titulo)}</h2>
+            <p class="fi-ubicacion">${ICONS.pin}${escapeHtml(listing.barrio)}, Sur de Cali${listing.id ? ` · Ref. ${escapeHtml(listing.id)}` : ""}</p>
+          </div>
+
+          <div class="fi-hechos">
+            ${hechoHtml("bed", listing.habitaciones ? String(listing.habitaciones) : "", listing.habitaciones === 1 ? "Habitación" : "Habitaciones")}
+            ${hechoHtml("bath", listing.banos ? String(listing.banos) : "", listing.banos === 1 ? "Baño" : "Baños")}
+            ${hechoHtml("area", listing.area ? `${listing.area} m²` : "", "Área")}
+            ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? hechoHtml("car", listing.parqueadero, "Parqueadero") : ""}
+            ${hechoHtml("layers", listing.piso, isCasa(listing.tipo) ? "Niveles" : "Piso")}
+            ${hechoHtml("star", listing.estrato, "Estrato")}
+          </div>
+
+          ${numeros}
+          ${sobre}
+          ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
         </div>
-      ` : ""}
-      <span class="card-badge ${badgeClass} detail-badge">${escapeHtml(listing.servicio || "Disponible")}</span>
-      ${carouselPhotos[0] !== PLACEHOLDER_IMG ? `
-        <button type="button" class="carousel-zoom" id="carousel-zoom" aria-label="Ampliar foto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-          Ampliar
-        </button>
-      ` : ""}
-    </div>
 
-    <div class="detail-body">
-      <p class="detail-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
-      <h2 class="detail-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h2>
-
-      <div class="detail-stats">
-        ${detailStat("area", listing.area ? `${listing.area} m²` : "", "Área")}
-        ${detailStat("bed", listing.habitaciones || "", listing.habitaciones === 1 ? "Habitación" : "Habitaciones")}
-        ${detailStat("bath", listing.banos || "", listing.banos === 1 ? "Baño" : "Baños")}
-        ${detailStat("layers", listing.piso || "", isCasa(listing.tipo) ? "Niveles" : "Piso")}
-        ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? detailStat("car", listing.parqueadero, "Parqueadero") : ""}
-        ${detailStat("credito", creditoLabel(listing.credito), "Crédito")}
-      </div>
-
-      <div class="detail-cta">
-        ${whatsappConfigured() ? `
-          <button type="button" class="detail-whatsapp" id="detail-lead-toggle">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 0 1 10.2-8.24 6.55 6.55 0 0 1 1.94 4.67 6.62 6.62 0 0 1-6.54 6.66Zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.19-.51.64-.63.78-.11.13-.23.15-.43.05-.2-.1-.83-.31-1.58-.98a5.9 5.9 0 0 1-1.1-1.36c-.11-.2 0-.3.09-.4.09-.1.2-.24.3-.36.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34h-.38c-.13 0-.35.05-.53.25-.18.19-.7.68-.7 1.66s.72 1.93.82 2.06c.1.13 1.4 2.14 3.4 3 .47.2.85.32 1.14.42.48.15.91.13 1.26.08.38-.06 1.17-.48 1.34-.94.16-.46.16-.86.11-.94-.05-.08-.18-.13-.38-.23Z"/></svg>
-            Quiero conocer este inmueble
-          </button>
-          <form class="detail-lead-form" id="detail-lead-form" hidden>
-            <input class="detail-lead-input" type="text" id="dl-nombre" placeholder="Tu nombre" required>
-            <input class="detail-lead-input" type="tel" id="dl-whatsapp" placeholder="Tu WhatsApp" required inputmode="numeric">
-            <select class="detail-lead-input" id="dl-credito" required>
-              <option value="">¿Ya tienes crédito aprobado o estás por gestionarlo?</option>
-              <option value="Aprobado">Sí, ya lo tengo aprobado</option>
-              <option value="En trámite">Lo estoy gestionando</option>
-              <option value="Contado">Voy a pagar de contado</option>
-            </select>
-            <button type="submit" class="detail-lead-submit">Enviar y continuar a WhatsApp →</button>
-            <p class="detail-lead-error" id="detail-lead-error" hidden>Completa los 3 campos para continuar.</p>
-          </form>` : ""}
-        ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
-        <a class="detail-crm-link" href="${SITE_BASE}credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
+        <aside class="fi-aside">
+          <div class="fi-reserva">
+            <span class="fi-reserva-etq">${etiquetaPrecio}</span>
+            <p class="detail-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
+            <div class="detail-cta">
+              ${whatsappConfigured() ? `
+                <button type="button" class="detail-whatsapp" id="detail-lead-toggle">
+                  ${ICONS.wa}
+                  Quiero verlo por WhatsApp
+                </button>
+                <form class="detail-lead-form" id="detail-lead-form" hidden>
+                  <input class="detail-lead-input" type="text" id="dl-nombre" placeholder="Tu nombre" required autocomplete="name">
+                  <input class="detail-lead-input" type="tel" id="dl-whatsapp" placeholder="Tu WhatsApp" required inputmode="numeric" autocomplete="tel">
+                  <select class="detail-lead-input" id="dl-credito" required>
+                    <option value="">¿Ya tienes crédito aprobado o estás por gestionarlo?</option>
+                    <option value="Aprobado">Sí, ya lo tengo aprobado</option>
+                    <option value="En trámite">Lo estoy gestionando</option>
+                    <option value="Contado">Voy a pagar de contado</option>
+                  </select>
+                  <button type="submit" class="detail-lead-submit">Enviar y continuar a WhatsApp →</button>
+                  <p class="detail-lead-error" id="detail-lead-error" hidden>Completa los 3 campos para continuar.</p>
+                </form>
+                <div class="fi-mensaje">
+                  <span>Mensaje listo para enviar:</span>
+                  <p id="fi-mensaje-texto">“${escapeHtml(mensajeInteres(listing))}”</p>
+                </div>
+                <div class="fi-visita">
+                  <span>¿Cuándo quieres visitarlo?</span>
+                  <div class="fi-chips" id="fi-chips">
+                    ${["Hoy", "Mañana", "Este fin de semana"].map((t) => `<button type="button" class="fi-chip" data-visita="${t}" aria-pressed="false">${t}</button>`).join("")}
+                  </div>
+                </div>` : ""}
+            </div>
+            <div class="fi-acciones">
+              <button type="button" class="fi-accion" id="fi-compartir">${ICONS.share}<span>Compartir</span></button>
+              <a class="fi-accion" href="${SITE_BASE}credito/?valor=${listing.precio || ""}">${ICONS.calc}<span>Simular crédito</span></a>
+            </div>
+          </div>
+          ${asesorHtml()}
+        </aside>
       </div>
 
       ${similares.length ? `
@@ -510,12 +642,62 @@ function detailHtml(listing) {
           <h3>Inmuebles similares</h3>
           <div class="detail-similar-grid">${similares.map(miniCardHtml).join("")}</div>
         </div>` : ""}
+      ${whatsappConfigured() ? `
+        <div class="fi-barra">
+          <div><span>${etiquetaPrecio}</span><strong>${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</strong></div>
+          <button type="button" class="fi-barra-wa" id="fi-barra-wa">${ICONS.wa}Quiero verlo</button>
+        </div>` : ""}
     </div>
   `;
 }
 
 function enviarLeadASheet(data) {
   enviarLeadBackend(data); // js/lead-api.js
+}
+
+// Volver, chips de visita y compartir (parte nueva de la ficha)
+function wireDetailExtras(listing) {
+  visitaElegida = "";
+  const volver = document.getElementById("fi-volver");
+  if (volver) volver.addEventListener("click", () => closeDetail());
+
+  const chips = document.querySelectorAll("#fi-chips .fi-chip");
+  const texto = document.getElementById("fi-mensaje-texto");
+  chips.forEach((chip) => chip.addEventListener("click", () => {
+    const ya = chip.classList.contains("activo");
+    chips.forEach((c) => { c.classList.remove("activo"); c.setAttribute("aria-pressed", "false"); });
+    visitaElegida = ya ? "" : chip.dataset.visita;
+    if (!ya) { chip.classList.add("activo"); chip.setAttribute("aria-pressed", "true"); }
+    if (texto) texto.textContent = `“${mensajeInteres(listing)}${visitaElegida ? " Me gustaría verlo: " + visitaElegida.toLowerCase() + "." : ""}”`;
+  }));
+
+  // Barra fija de celular: abre el mismo formulario de la columna de contacto.
+  const barra = document.getElementById("fi-barra-wa");
+  if (barra) barra.addEventListener("click", () => {
+    const toggle = document.getElementById("detail-lead-toggle");
+    if (toggle && !toggle.hidden) toggle.click();
+    const form = document.getElementById("detail-lead-form");
+    if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  const compartir = document.getElementById("fi-compartir");
+  if (compartir) compartir.addEventListener("click", async () => {
+    const url = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
+    const etiqueta = compartir.querySelector("span");
+    try {
+      if (navigator.share) { await navigator.share({ title: `${listing.tipo} en ${listing.barrio}`, url }); return; }
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      const tmp = document.createElement("textarea");
+      tmp.value = url; document.body.appendChild(tmp); tmp.select();
+      try { document.execCommand("copy"); } catch (e2) { /* sin permiso */ }
+      document.body.removeChild(tmp);
+    }
+    const original = etiqueta.textContent;
+    etiqueta.textContent = "¡Enlace copiado!";
+    setTimeout(() => { etiqueta.textContent = original; }, 1800);
+  });
 }
 
 function wireDetailLeadForm(listing) {
@@ -546,7 +728,7 @@ function wireDetailLeadForm(listing) {
     error.hidden = true;
 
     const price = priceForCard(listing).amount;
-    const inmuebleTexto = `${listing.tipo} en ${listing.barrio} (${formatCOP(price)})`;
+    const inmuebleTexto = `${listing.tipo} en ${listing.barrio} (${formatCOP(price)})${visitaElegida ? " · Visita: " + visitaElegida : ""}`;
     const inmuebleUrl = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
 
     const eventId = trackPixel("Lead", {
@@ -566,7 +748,7 @@ function wireDetailLeadForm(listing) {
       estadoCredito: credito,
     });
 
-    const msg = `Hola, soy ${nombre}. Quiero conocer este inmueble: ${inmuebleTexto}. Estado del crédito: ${credito}. ${inmuebleUrl}`;
+    const msg = `Hola, soy ${nombre}. Quiero conocer este inmueble: ${inmuebleTexto}. Estado del crédito: ${credito}.${visitaElegida ? " Me gustaría verlo: " + visitaElegida.toLowerCase() + "." : ""} ${inmuebleUrl}`;
     const waHref = whatsappConfigured() ? `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}` : "#";
 
     e.submitter.disabled = true;
@@ -580,6 +762,9 @@ function wireDetailCarousel() {
   const next = document.getElementById("carousel-next");
   if (prev) prev.addEventListener("click", () => moveCarousel(-1));
   if (next) next.addEventListener("click", () => moveCarousel(1));
+  document.querySelectorAll("#fi-miniaturas button").forEach((m) => {
+    m.addEventListener("click", () => { carouselIndex = Number(m.dataset.i); renderCarousel(); });
+  });
   document.querySelectorAll("#detail-carousel-dots button").forEach((dot) => {
     dot.addEventListener("click", () => { carouselIndex = Number(dot.dataset.i); renderCarousel(); });
   });
@@ -968,6 +1153,7 @@ function openDetail(id, { mode = "push" } = {}) {
   wireDetailCarousel();
   renderCarousel(); // marca el primer punto del carrusel
   wireDetailLeadForm(listing);
+  wireDetailExtras(listing);
 
   // "push" solo se usa al abrir desde el catálogo (agrega una entrada al
   // historial, así "atrás" cierra la ficha). Al navegar a un "inmueble
@@ -1021,6 +1207,7 @@ let filterState = {
   search: "", tipo: "", parqueadero: "", servicio: "", credito: "",
   precioMin: null, precioMax: null,
   pisoMin: null, pisoMax: null,
+  habMin: null,
   sort: "random",
 };
 
@@ -1081,6 +1268,7 @@ function applyFilters(listings) {
     if (filterState.servicio === "arriendo" && !isArriendo(l.servicio)) return false;
     if (!matchesPriceRange(l)) return false;
     if (!matchesPisoRange(l)) return false;
+    if (filterState.habMin != null && (l.habitaciones || 0) < filterState.habMin) return false;
     return true;
   });
 }
@@ -1146,6 +1334,7 @@ function readFiltersFromURL() {
   filterState.precioMax = p.has("precioMax") ? Number(p.get("precioMax")) : null;
   filterState.pisoMin = p.has("pisoMin") ? Number(p.get("pisoMin")) : null;
   filterState.pisoMax = p.has("pisoMax") ? Number(p.get("pisoMax")) : null;
+  filterState.habMin = p.has("hab") ? Number(p.get("hab")) : null;
   filterState.sort = p.get("sort") || "random";
 }
 
@@ -1160,6 +1349,7 @@ function updateURL() {
   if (filterState.precioMax != null) p.set("precioMax", filterState.precioMax);
   if (filterState.pisoMin != null) p.set("pisoMin", filterState.pisoMin);
   if (filterState.pisoMax != null) p.set("pisoMax", filterState.pisoMax);
+  if (filterState.habMin != null) p.set("hab", filterState.habMin);
   if (filterState.sort && filterState.sort !== "random") p.set("sort", filterState.sort);
 
   const query = p.toString();
@@ -1177,6 +1367,7 @@ function syncControlsFromState() {
   document.getElementById("f-precio-max").value = filterState.precioMax ?? "";
   document.getElementById("f-piso-min").value = filterState.pisoMin ?? "";
   document.getElementById("f-piso-max").value = filterState.pisoMax ?? "";
+  document.getElementById("f-hab").value = filterState.habMin == null ? "" : String(filterState.habMin);
   document.getElementById("f-sort").value = filterState.sort;
   updatePillStates();
 }
@@ -1184,7 +1375,7 @@ function syncControlsFromState() {
 // Resalta cada "pill" cuando tiene un filtro aplicado, y actualiza el
 // texto de los pills de Precio/Piso para reflejar el rango elegido.
 function updatePillStates() {
-  ["f-tipo", "f-parqueadero", "f-credito", "f-servicio"].forEach((id) => {
+  ["f-tipo", "f-parqueadero", "f-credito", "f-servicio", "f-hab"].forEach((id) => {
     const el = document.getElementById(id);
     el.classList.toggle("pill-active", el.value !== "");
   });
@@ -1241,6 +1432,7 @@ function wireFilters() {
   document.getElementById("f-parqueadero").addEventListener("change", (e) => { filterState.parqueadero = e.target.value; onFilterChange(); });
   document.getElementById("f-credito").addEventListener("change", (e) => { filterState.credito = e.target.value; onFilterChange(); });
   document.getElementById("f-servicio").addEventListener("change", (e) => { filterState.servicio = e.target.value; onFilterChange(); });
+  document.getElementById("f-hab").addEventListener("change", (e) => { filterState.habMin = e.target.value === "" ? null : Number(e.target.value); onFilterChange(); });
   document.getElementById("f-sort").addEventListener("change", (e) => { filterState.sort = e.target.value; onFilterChange(); });
 
   document.getElementById("f-precio-min").addEventListener("input", (e) => { filterState.precioMin = e.target.value === "" ? null : Number(e.target.value); onFilterChange(); });
@@ -1260,7 +1452,7 @@ function wireFilters() {
   });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
-    filterState = { search: "", tipo: "", parqueadero: "", credito: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, sort: "random" };
+    filterState = { search: "", tipo: "", parqueadero: "", credito: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, habMin: null, sort: "random" };
     syncControlsFromState();
     onFilterChange();
   });
