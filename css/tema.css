@@ -1,0 +1,220 @@
+/* ─────────────────────────────────────────────────────────────
+   Tema "editorial cálido" — se carga DESPUÉS de style.css y lo
+   sobrescribe: tokens, encabezado, pie, catálogo, tarjetas y ficha.
+   Los colores de marca opcionales (config.js) siguen funcionando
+   porque se aplican sobre --forest / --forest-dark.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --paper: #f7f4ec;
+  --card: #fffdf8;
+  --ink: #232b22;
+  --muted: #5d5748;
+  --line: #e3dccb;
+  --line-soft: #ece6d6;
+  --forest: #3f5a44;
+  --forest-dark: #2c4030;
+  --tint: #e7efe3;
+  --brass: #a9812e;
+  --brass-light: #d9b25f;
+  --brass-text: #7c5c14;
+  --night: #0a0f0c;
+  --wa: #1f9d55;
+  --wa-dark: #187d44;
+  --radio: 14px;
+}
+
+body { line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+/* ── Encabezado ─────────────────────────────────────────────── */
+.sitebar { background: var(--paper); border-bottom: 1px solid var(--line); position: relative; z-index: 30; }
+.sitebar-inner { max-width: 1220px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 18px; }
+.sitebar .brand { margin: 0; }
+.sitebar-links { display: none; margin-left: auto; gap: 4px; }
+.sitebar-links a { padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; }
+.sitebar-links a:hover { color: var(--forest-dark); background: var(--tint); }
+.sitebar-links a.active { color: var(--forest-dark); background: var(--tint); font-weight: 600; }
+.sitebar-cta { display: none; align-items: center; gap: 8px; background: var(--forest); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.sitebar-cta:hover { background: var(--forest-dark); }
+.sitebar-toggle { margin-left: auto; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--forest-dark); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.sitebar.abierto .sitebar-links {
+  display: flex; flex-direction: column; position: absolute; left: 12px; right: 12px; top: 100%; margin: 6px 0 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radio); padding: 8px; box-shadow: 0 14px 34px rgba(35, 43, 34, 0.14);
+}
+.sitebar.abierto .sitebar-links a { padding: 12px 14px; font-size: 15px; }
+@media (min-width: 900px) {
+  .sitebar-inner { padding: 14px 32px; }
+  .sitebar-links { display: flex; }
+  .sitebar-cta { display: inline-flex; }
+  .sitebar-toggle { display: none; }
+  .sitebar-links { margin-left: auto; }
+}
+
+/* Marca */
+.brand-mono { background: var(--forest); box-shadow: inset 0 0 0 2px var(--forest), inset 0 0 0 3px var(--brass-light); }
+.brand-claro { color: #f4efe2; }
+.brand-claro .brand-text strong { color: #f4efe2; }
+.brand-claro .brand-text span { color: #b9b29d; }
+
+/* ── Encabezado de página (título de cada sección) ──────────── */
+.topbar { padding: 34px 20px 26px; border-bottom: 1px solid var(--line); background: var(--paper); }
+.topbar-inner { max-width: 1220px; margin: 0 auto; }
+.topbar-eyebrow { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass-text); }
+.topbar-title { display: block; margin: 0; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.1; color: var(--forest-dark); font-family: var(--font-display); font-weight: 500; }
+.topbar-subtitle { display: block; margin: 10px 0 0; max-width: 62ch; color: var(--muted); font-size: 16px; }
+@media (min-width: 860px) { .topbar { padding: 44px 32px 34px; } .topbar-title { margin-top: 0; } }
+
+/* ── Filtros ────────────────────────────────────────────────── */
+.filters { background: rgba(247, 244, 236, 0.96); backdrop-filter: blur(6px); }
+.pill, .btn-outline { border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.pill-select.pill-active, .pill-toggle.pill-active { background: var(--tint); border-color: var(--forest); color: var(--forest-dark); }
+.pill-popover { border-radius: var(--radio); box-shadow: 0 14px 34px rgba(35, 43, 34, 0.16); }
+.filters-count { font-weight: 600; color: var(--forest-dark); }
+.sales-banner { background: var(--tint); color: var(--forest-dark); }
+
+/* ── Tarjetas del catálogo ──────────────────────────────────── */
+.gallery { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; }
+.card { border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(35, 43, 34, 0.03); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(35, 43, 34, 0.12); }
+.card-image-link { aspect-ratio: 4 / 3; }
+.card-badge { top: 14px; left: 14px; padding: 6px 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+.card-badge.venta { background: var(--forest); }
+.card-badge.arriendo { background: #8a5a2e; }
+.card-body { padding: 18px 20px 20px; gap: 8px; }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.card-price { font-size: 28px; line-height: 1.1; color: var(--forest-dark); }
+.card-price small { font-size: 13px; }
+.card-credit { position: static; background: var(--tint); color: var(--forest-dark); font-size: 12px; font-weight: 600; padding: 5px 11px; }
+.card-title { font-size: 16px; font-weight: 600; font-family: var(--font-body); color: var(--ink); }
+.card-zona { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: var(--muted); }
+.card-zona svg { width: 15px; height: 15px; flex: none; color: var(--brass); }
+.card-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 0 2px; border-top: 1px solid var(--line-soft); margin-top: 4px; font-size: 13px; color: var(--muted); }
+.card-meta-item { display: inline-flex; align-items: center; gap: 6px; }
+.card-meta-item svg { width: 17px; height: 17px; color: var(--forest); }
+.card-actions { border-top: none; padding-top: 6px; }
+.card-link { color: var(--forest-dark); font-size: 14px; border-top: none; padding-top: 0; }
+.card-link:hover { text-decoration: none; color: var(--brass-text); }
+.card-whatsapp { width: 42px; height: 42px; border-radius: 50%; background: var(--wa); color: #fff; justify-content: center; flex: none; }
+.card-whatsapp svg { width: 20px; height: 20px; }
+.card-whatsapp:hover { background: var(--wa-dark); text-decoration: none; }
+.whatsapp-float { background: var(--wa); }
+.whatsapp-float:hover { background: var(--wa-dark); }
+.foot { background: var(--paper); }
+
+/* ── Pie ────────────────────────────────────────────────────── */
+.sitefoot { background: var(--night); color: #cfc8b4; padding: 40px 20px 28px; margin-top: 48px; }
+.sitefoot-inner { max-width: 1220px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 22px; }
+.sitefoot-links { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+.sitefoot-links a { color: #e9e3d0; text-decoration: none; font-size: 14px; }
+.sitefoot-links a:hover { color: var(--brass-light); }
+.sitefoot-nota { max-width: 1220px; margin: 26px auto 0; padding-top: 20px; border-top: 1px solid #243027; font-size: 12px; color: #8e8873; }
+@media (min-width: 900px) { .sitefoot { padding: 48px 32px 30px; } }
+
+/* ── Ficha del inmueble ─────────────────────────────────────── */
+.detail-overlay { background: rgba(10, 15, 12, 0.62); }
+.detail-panel { background: var(--paper); max-width: 1120px; }
+@media (min-width: 700px) { .detail-panel { border-radius: 22px; } }
+.detail-close { background: rgba(10, 15, 12, 0.6); top: 16px; right: 16px; }
+
+.fi { padding: 18px 16px 0; }
+.fi-volver { background: none; border: none; padding: 6px 0; margin: 0 0 12px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--forest-dark); cursor: pointer; }
+.fi-volver:hover { color: var(--brass-text); }
+.fi-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+
+.fi .detail-carousel { border-radius: 16px; aspect-ratio: 4 / 3; background: #1c231d; }
+.fi .carousel-zoom { left: 14px; bottom: 14px; }
+.fi-miniaturas { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+.fi-miniaturas::-webkit-scrollbar { display: none; }
+.fi-miniaturas button { flex: none; width: 76px; height: 58px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--line); cursor: pointer; opacity: 0.7; }
+.fi-miniaturas button.active { border-color: var(--brass); opacity: 1; }
+.fi-miniaturas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.fi-cabecera { padding: 22px 0 6px; }
+.fi-etiquetas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.fi-etq { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: var(--tint); color: var(--forest-dark); }
+.fi-etq.venta { background: var(--forest); color: #fff; }
+.fi-etq.arriendo { background: #8a5a2e; color: #fff; }
+.fi-etq.credito { background: #f3e7c6; color: var(--brass-text); }
+.fi .detail-title { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: clamp(26px, 3.4vw, 36px); line-height: 1.12; color: var(--forest-dark); }
+.fi-ubicacion { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+.fi-ubicacion svg { width: 16px; height: 16px; color: var(--brass); flex: none; }
+
+.fi-hechos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 6px; }
+.fi-hecho { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.fi-hecho svg { width: 24px; height: 24px; color: var(--forest); flex: none; }
+.fi-hecho strong { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 500; color: var(--ink); line-height: 1.1; }
+.fi-hecho span { font-size: 12px; color: var(--muted); }
+
+.fi-seccion { margin-top: 26px; }
+.fi-seccion h3 { margin: 0 0 12px; font-size: 22px; color: var(--forest-dark); }
+.fi-numeros { display: grid; gap: 12px; }
+.fi-numero { padding: 18px 20px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.fi-numero-etq { display: block; font-size: 13px; color: var(--muted); }
+.fi-numero strong { display: block; margin: 4px 0 6px; font-family: var(--font-display); font-weight: 500; font-size: 26px; color: var(--forest-dark); }
+.fi-numero small { display: block; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.fi-numero small.inline { display: inline; font-family: var(--font-body); font-size: 14px; }
+.fi-numero a { color: var(--forest-dark); font-weight: 600; }
+.fi-texto { margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink); max-width: 66ch; }
+.fi .detail-crm-link { display: inline-block; margin-top: 22px; color: var(--forest-dark); font-weight: 600; }
+
+/* Columna de contacto */
+.fi-aside { display: flex; flex-direction: column; gap: 14px; }
+.fi-reserva { padding: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 10px 28px rgba(35, 43, 34, 0.08); }
+.fi-reserva-etq { font-size: 13px; color: var(--muted); }
+.fi .detail-price { margin: 2px 0 16px; font-size: 34px; line-height: 1.1; color: var(--forest-dark); }
+.fi .detail-cta { margin: 0 0 14px; gap: 14px; }
+.fi .detail-whatsapp, .fi .detail-lead-submit { background: var(--wa); border-radius: 14px; padding: 15px; font-size: 16px; }
+.fi .detail-whatsapp:hover, .fi .detail-lead-submit:hover { background: var(--wa-dark); }
+.fi .detail-lead-form { background: var(--paper); border-radius: 14px; }
+.fi .detail-lead-input { border-radius: 10px; }
+.fi-mensaje { font-size: 13px; color: var(--muted); }
+.fi-mensaje p { margin: 6px 0 0; padding: 11px 13px; background: var(--paper); border-radius: 12px; border: 1px dashed var(--line); color: var(--ink); font-size: 14px; line-height: 1.45; }
+.fi-visita > span { font-size: 13px; color: var(--muted); }
+.fi-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.fi-chip { font-family: inherit; font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.fi-chip:hover { border-color: var(--forest); }
+.fi-chip.activo { background: var(--forest); border-color: var(--forest); color: #fff; }
+.fi-acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.fi-accion { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--forest-dark); font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.fi-accion svg { width: 18px; height: 18px; }
+.fi-accion:hover { border-color: var(--forest); background: var(--tint); }
+
+.fi-asesor { display: flex; gap: 14px; align-items: flex-start; padding: 18px; background: var(--tint); border-radius: 16px; }
+.fi-asesor-foto { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: center 20%; flex: none; border: 2px solid var(--card); }
+.fi-asesor strong { display: block; font-family: var(--font-display); font-weight: 500; font-size: 18px; color: var(--forest-dark); }
+.fi-asesor-cargo { display: block; font-size: 13px; color: var(--muted); }
+.fi-asesor p { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink); }
+
+.fi .detail-similar { margin-top: 34px; padding-bottom: 28px; }
+.fi .detail-similar h3 { font-size: 22px; font-weight: 500; color: var(--forest-dark); margin: 0 0 14px; }
+.fi .detail-similar-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.mini-card { border-radius: 14px; background: var(--card); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.mini-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(35, 43, 34, 0.1); }
+.mini-card-body strong { font-size: 16px; }
+
+/* Barra fija (solo celular) */
+.fi-barra { position: sticky; bottom: 0; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -8px 22px rgba(35, 43, 34, 0.08); }
+.fi-barra span { display: block; font-size: 11px; color: var(--muted); }
+.fi-barra strong { font-family: var(--font-display); font-weight: 500; font-size: 20px; color: var(--forest-dark); }
+.fi-barra strong small { font-family: var(--font-body); font-size: 12px; color: var(--muted); }
+.fi-barra-wa { display: inline-flex; align-items: center; gap: 8px; padding: 13px 20px; border: none; border-radius: 14px; background: var(--wa); color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.fi-barra-wa svg { width: 18px; height: 18px; }
+
+@media (min-width: 560px) {
+  .fi-hechos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fi-numeros { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 900px) {
+  .fi { padding: 28px 32px 0; }
+  .fi-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 34px; align-items: start; }
+  .fi-aside { position: sticky; top: 8px; }
+  .fi-barra { display: none; }
+  .fi .detail-carousel { aspect-ratio: 16 / 10; }
+}
+
+/* ── Páginas secundarias: se heredan los tokens; solo se afina ─ */
+.lead-card, .credito-form, .credito-resultado, .solicitud-card { border-radius: 18px; }
+.info-banner, .credito-cuota-box { border-radius: 12px; }
+.lead-input, .detail-lead-input { border-radius: 10px; }

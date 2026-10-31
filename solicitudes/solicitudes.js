@@ -13,6 +13,9 @@ async function fetchSolicitudes() {
   // Pestaña real: "Requerimientos" (no "Solicitudes")
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/Requerimientos!A1:J300?key=${CONFIG.API_KEY}`;
   const res = await fetch(url);
+  // La pestaña "Requerimientos" del espejo aparece cuando se guarda el primer
+  // requerimiento desde el Panel; antes de eso es normal que no exista.
+  if (res.status === 400 || res.status === 404) return [];
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body?.error?.message || `Error HTTP ${res.status}`);
@@ -50,7 +53,8 @@ function rowsToSolicitudes(values) {
   const col = {
     tipo: findCol(headers, "tipo"),
     barrios: findCol(headers, "barrio"),
-    zona: findCol(headers, "zona"),
+    // En el espejo "Barrio/Zona" es una sola columna: si coinciden, no se repite.
+    zona: findCol(headers, "zona") === findCol(headers, "barrio") ? -1 : findCol(headers, "zona"),
     presupuesto: findCol(headers, "presup"),
     formaPago: findCol(headers, "forma de pago", "forma pago"),
     entidad: findCol(headers, "entidad"),
@@ -121,7 +125,7 @@ function whatsappTextFor(s) {
   if (s.presupuesto) lineas.push(`Precio: $${s.presupuesto} millones.`);
   lineas.push("");
   lineas.push("Ver más solicitudes");
-  lineas.push(`👉 https://otayajavier.github.io/catalogo/solicitudes/`);
+  lineas.push(`👉 ${String(CONFIG.BASE_URL || "").replace(/\/?$/, "/")}solicitudes/`);
   return lineas.join("\n");
 }
 

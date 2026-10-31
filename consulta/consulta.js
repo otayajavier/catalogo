@@ -60,16 +60,7 @@ function initMetaPixelIfConfigured() {
 }
 
 function enviarASheet(data) {
-  if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
-  // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
-  // "keepalive": el envío se completa aunque enseguida se cambie de página.
-  fetch(CONFIG.LEADS_WEBAPP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    keepalive: true,
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(Object.assign({}, data, datosParaMeta())),
-  }).catch(() => {}); // si falla el guardado, no bloqueamos la experiencia del lead
+  enviarLeadBackend(data); // ../js/lead-api.js
 }
 
 function buildWhatsappMessage(data) {
