@@ -81,7 +81,11 @@ function rowsToSolicitudes(values) {
     }))
     // Si algún día agregas una columna "Estado", esto oculta las "Cerrada".
     // Mientras no exista esa columna, se muestran todas.
-    .filter((s) => s.estado.toLowerCase() !== "cerrada");
+    .filter((s) => s.estado.toLowerCase() !== "cerrada")
+    // Del contacto con el cliente más reciente al más antiguo. Las que no
+    // tienen fecha van al final; a igual fecha se respeta el orden de la hoja
+    // (Array.sort es estable).
+    .sort((a, b) => (b.fechaContacto ? b.fechaContacto.getTime() : -Infinity) - (a.fechaContacto ? a.fechaContacto.getTime() : -Infinity));
 }
 
 function cardHtml(s, i) {
