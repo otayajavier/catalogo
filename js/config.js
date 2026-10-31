@@ -7,7 +7,7 @@
 const CONFIG = {
   // ID de la hoja ESPEJO PÚBLICA (la que crea el backend), NO el de la Maestra.
   // Sale en el correo de salud y al ejecutar LC_diagnostico en Apps Script.
-  SPREADSHEET_ID: "PENDIENTE_ID_DEL_ESPEJO",
+  SPREADSHEET_ID: "1IbX4KKEeC2JarWSZxoZKyr9V1p9qSQfLJE0qU2bPF04",
 
   // API key de Google Cloud, creada en el proyecto de Google Cloud de
   // DEL CLIENTE (Sheets API habilitada, restringida al dominio del sitio).
@@ -29,7 +29,7 @@ const CONFIG = {
 
   // URL del despliegue (Web App) de Apps Script de la cuenta del cliente.
   // Recibe los leads. Termina en /exec.
-  LEADS_WEBAPP_URL: "PENDIENTE_URL_DEL_WEB_APP",
+  LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyWf5HNp4cee-XmMLamTEo-PvV1h_fYTew3XVLvx748vNiGDT9Lf4ANH1nDrMlDX-cj/exec",
 
   // Dirección pública del sitio, con "/" al final. Se usa en los mensajes que
   // se comparten (por ejemplo "Copiar para WhatsApp" en Solicitudes).
