@@ -584,9 +584,8 @@ function detailHtml(listing) {
             ${hechoHtml("star", listing.estrato, "Estrato")}
           </div>
 
-          ${numeros}
           ${sobre}
-          ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
+          ${numeros}
         </div>
 
         <aside class="fi-aside">
