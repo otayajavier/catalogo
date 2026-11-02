@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de administración</title>
+<style>
+/* ============================================================
+   TOKENS — variables de diseño
+   ============================================================ */
+:root {
+  --tinta:    #1c2430; --suave:   #5b6676; --tenue:  #8a94a3;
+  --linea:    #e3e7ed; --fondo:   #f5f6f8; --papel:  #ffffff;
+  --acento:   #0f5b4f; --acento2: #e7f2ef;
+  --alerta:   #b4232a; --alerta2: #fdecec;
+  --aviso:    #fff5d6; --ok:      #e6f4ea;
+  --radio:    10px;
+  --trans:    150ms ease;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--fondo); color: var(--tinta); font: 14px/1.5 "Segoe UI", Roboto, Arial, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--acento); }
+img { max-width: 100%; display: block; }
+
+/* ============================================================
+   PANTALLA DE LOGIN (PIN)
+   ============================================================ */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--fondo);
+}
+   .login-wrap[hidden] { display: none; }
+.login-caja {
+  background: var(--papel); border: 1px solid var(--linea); border-radius: 16px;
+  padding: 40px 32px; width: 100%; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,.1);
+  text-align: center;
+}
+.login-logo {
+  width: 52px; height: 52px; background: var(--acento); border-radius: 12px;
+  display: grid; place-items: center; margin: 0 auto 20px;
+  font-size: 22px; font-weight: 800; color: #fff;
+}
+.login-caja h1 { font-size: 20px; margin-bottom: 6px; }
+.login-caja p  { color: var(--suave); font-size: 13px; margin-bottom: 24px; }
+.pin-input {
+  width: 100%; padding: 14px; font-size: 22px; letter-spacing: .3em; text-align: center;
+  border: 2px solid var(--linea); border-radius: var(--radio); background: var(--fondo);
+  margin-bottom: 14px; transition: border-color var(--trans);
+}
+.pin-input:focus { outline: none; border-color: var(--acento); background: #fff; }
+.pin-input.error { border-color: var(--alerta); background: var(--alerta2); }
+.pin-submit {
+  width: 100%; padding: 13px; background: var(--acento); color: #fff;
+  border: none; border-radius: var(--radio); font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: background var(--trans);
+}
+.pin-submit:hover   { background: #0c4c42; }
+.pin-submit:disabled { opacity: .6; cursor: default; }
+.login-error { color: var(--alerta); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+/* ============================================================
+   HEADER + PESTAÑAS
+   ============================================================ */
+header { position: sticky; top: 0; z-index: 5; background: var(--papel); border-bottom: 1px solid var(--linea); }
+.barra { max-width: 1000px; margin: 0 auto; padding: 12px 16px 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.barra h1 { font-size: 17px; letter-spacing: .2px; }
+.barra .usuario { color: var(--tenue); font-size: 12px; }
+.barra .sync { margin-left: auto; font-size: 12px; color: var(--tenue); }
+.barra .sync.activo { color: #a16207; }
+.barra .sync.ok { color: #15803d; }
+.pestanas { max-width: 1000px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+.pestana { border: 0; background: none; padding: 10px 14px; cursor: pointer; color: var(--suave); border-bottom: 2px solid transparent; font-weight: 600; white-space: nowrap; }
+.pestana[aria-selected="true"] { color: var(--acento); border-bottom-color: var(--acento); }
+.pestana .num { font-weight: 400; color: var(--tenue); margin-left: 4px; }
+
+/* ============================================================
+   LAYOUT PRINCIPAL
+   ============================================================ */
+main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+.herramientas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.buscar { flex: 1 1 220px; padding: 10px 12px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--papel); }
+.btn { border: 1px solid var(--linea); background: var(--papel); border-radius: var(--radio); padding: 9px 14px; cursor: pointer; font-weight: 600; transition: border-color var(--trans); }
+.btn:hover { border-color: #c9d0da; }
+.btn-primario { background: var(--acento); border-color: var(--acento); color: #fff; }
+.btn-primario:hover { background: #0c4c42; border-color: #0c4c42; }
+.btn:disabled { opacity: .55; cursor: default; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip { border: 1px solid var(--linea); background: var(--papel); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-size: 13px; color: var(--suave); }
+.chip[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+.lista { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+html, body { overflow-x: hidden; max-width: 100%; }
+main, .lista > * { min-width: 0; max-width: 100%; }
+.vacio, .cargando { text-align: center; color: var(--tenue); padding: 40px 10px; }
+
+/* ============================================================
+   TARJETA DE INMUEBLE
+   ============================================================ */
+.inm {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio);
+  padding: 10px; cursor: pointer; text-align: left; width: 100%;
+  transition: border-color var(--trans);
+}
+.inm:hover { border-color: #c9d0da; }
+.inm.guardando { opacity: .6; }
+.inm-img { width: 76px; height: 60px; border-radius: 8px; object-fit: cover; flex: none; background: var(--fondo); }
+.inm-sinfoto { width: 76px; height: 60px; border-radius: 8px; background: var(--fondo); display: grid; place-items: center; font-size: 11px; color: var(--tenue); flex: none; }
+.inm .info { display: block; min-width: 0; flex: 1; overflow: hidden; }
+.inm .tit { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inm .sub { color: var(--suave); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inm .precio-d { font-weight: 600; white-space: nowrap; text-align: right; }
+.precio-m { display: none; font-weight: 600; font-size: 13px; }
+.etq { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--fondo); color: var(--suave); margin-top: 3px; }
+.etq.disp { background: var(--acento2); color: var(--acento); }
+.etq.propia { background: #ede9fe; color: #5b21b6; }
+.etq.cerrada { background: #eceff3; color: var(--suave); }
+
+/* ============================================================
+   LEADS
+   ============================================================ */
+.lead { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 12px 14px; }
+.lead-cab { display: flex; gap: 10px; align-items: flex-start; }
+.lead-cab .nom { font-weight: 600; font-size: 15px; }
+.lead-cab .meta { color: var(--tenue); font-size: 12px; }
+.lead-cab .wa { margin-left: auto; flex: none; text-decoration: none; background: #e8f7ee; color: #12753a; border-radius: 999px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.lead-datos { margin: 8px 0; color: var(--suave); font-size: 13px; display: grid; gap: 2px; }
+.lead-datos b { color: var(--tinta); font-weight: 600; }
+.lead-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.etapa { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--linea); font-weight: 600; }
+.notas { white-space: pre-wrap; background: var(--fondo); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--suave); margin: 8px 0 0; max-height: 140px; overflow: auto; }
+.nota { width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 8px; resize: vertical; min-height: 38px; }
+.temp-resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.temp-caja { border: 1px solid var(--linea); background: var(--papel); border-radius: var(--radio); padding: 8px 10px; text-align: left; cursor: pointer; }
+.temp-caja .n { font-size: 20px; font-weight: 700; }
+.temp-caja .t { font-size: 12px; color: var(--suave); }
+.temp-caja[aria-pressed="true"] { outline: 2px solid var(--tinta); outline-offset: -1px; }
+.temp-caja.verde .n { color: #15803d; } .temp-caja.amarillo .n { color: #a16207; }
+.temp-caja.rojo .n { color: #b91c1c; } .temp-caja.vencido .n { color: #5c1d1d; }
+.temp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; margin-top: 4px; }
+.temp::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.temp.verde { background: #dcfce7; color: #15803d; } .temp.amarillo { background: #fef3c7; color: #a16207; }
+.temp.rojo { background: #fee2e2; color: #b91c1c; } .temp.vencido { background: #5c1d1d; color: #fff; }
+.lead.t-verde { box-shadow: inset 4px 0 0 #22c55e; } .lead.t-amarillo { box-shadow: inset 4px 0 0 #eab308; }
+.lead.t-rojo { box-shadow: inset 4px 0 0 #ef4444; } .lead.t-vencido { box-shadow: inset 4px 0 0 #5c1d1d; }
+.e-Nuevo { background: #e0e7ff; } .e-Contactado { background: #fef3c7; } .e-Calificado { background: #bbf7d0; }
+.e-Visita { background: #86efac; } .e-Negocio { background: #22c55e; color:#fff; } .e-No { background: #fecaca; }
+.estado-meta { font-size: 12px; color: var(--tenue); margin-top: 6px; }
+.estado-meta.error { color: var(--alerta); }
+
+/* ============================================================
+   REQUERIMIENTOS
+   ============================================================ */
+.req { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 12px 14px; }
+.req.cerrada { opacity: .65; }
+.req-cab { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.req-cab .tit { font-weight: 700; font-size: 15px; }
+.req-cab .pres { margin-left: auto; font-weight: 700; color: var(--acento); }
+.req .det { color: var(--suave); font-size: 13px; margin-top: 4px; }
+.req .det b { color: var(--tinta); font-weight: 600; }
+.req .obs { font-size: 13px; background: var(--fondo); border-radius: 8px; padding: 6px 9px; margin-top: 8px; white-space: pre-wrap; }
+.req .coinc { margin-top: 8px; font-size: 12px; color: var(--suave); }
+.req .coinc span { display: inline-block; background: var(--acento2); color: var(--acento); border-radius: 999px; padding: 2px 9px; margin: 3px 4px 0 0; font-weight: 600; }
+.req .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.req .acciones .btn { padding: 6px 12px; font-size: 13px; }
+.contacto-fila { display: flex; gap: 6px; }
+.contacto-fila input { flex: 1; }
+
+/* ============================================================
+   MODAL / FORMULARIO DE INMUEBLE
+   ============================================================ */
+.capa { position: fixed; inset: 0; background: rgba(20,26,36,.45); z-index: 10; display: flex; justify-content: center; align-items: flex-start; padding: 24px 12px; overflow-y: auto; }
+.capa[hidden] { display: none; }
+.hoja { background: var(--papel); border-radius: 14px; width: 100%; max-width: 780px; box-shadow: 0 20px 50px rgba(0,0,0,.2); display: flex; flex-direction: column; max-height: calc(100vh - 48px); }
+.hoja-cab { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--linea); }
+.hoja-cab h2 { margin: 0; font-size: 16px; }
+.cerrar { margin-left: auto; border: 0; background: none; font-size: 22px; cursor: pointer; color: var(--suave); }
+.hoja-cuerpo { padding: 16px 18px; overflow-y: auto; flex: 1; }
+.hoja-pie { background: var(--papel); border-top: 1px solid var(--linea); padding: 12px 18px; display: flex; gap: 10px; align-items: center; border-radius: 0 0 14px 14px; }
+.hoja-pie .msg { font-size: 13px; color: var(--suave); flex: 1; }
+
+/* Secciones del formulario */
+.form-seccion { border: 1px solid var(--linea); border-radius: var(--radio); margin-bottom: 16px; overflow: hidden; }
+.form-seccion-cab { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--fondo); font-weight: 600; font-size: 13px; cursor: pointer; }
+.form-seccion-cab span { flex: 1; }
+.form-seccion-cuerpo { padding: 14px; }
+
+/* Origen (propio/colega) */
+.origen-pregunta { font-weight: 600; margin-bottom: 12px; }
+.origen-opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.origen-btn { text-align: left; border: 1px solid var(--linea); background: #fff; border-radius: var(--radio); padding: 16px; cursor: pointer; font-weight: 600; font-size: 15px; }
+.origen-btn:hover { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento2); }
+.origen-btn small { display: block; font-weight: 400; color: var(--suave); font-size: 13px; margin-top: 4px; }
+
+/* Link de colega */
+.link-colega { background: var(--acento2); border-radius: var(--radio); padding: 10px 12px; margin-bottom: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.link-colega input { flex: 1 1 200px; padding: 7px 9px; border: 1px solid #c8ddd7; border-radius: 8px; background: #fff; font-size: 12px; }
+.link-colega[hidden] { display: none; }   /* sin esto, display:flex pisa el atributo hidden y la caja sale vacía */
+
+/* Importar desde URL */
+.importar { background: var(--acento2); border-radius: var(--radio); padding: 12px; margin-bottom: 16px; }
+.importar summary { cursor: pointer; font-weight: 600; color: var(--acento); }
+.importar .fila-url { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.importar input, .importar textarea { flex: 1 1 260px; padding: 9px 10px; border: 1px solid #c8ddd7; border-radius: 8px; background: #fff; }
+.importar textarea { width: 100%; margin-top: 8px; min-height: 70px; }
+
+/* Fotos + documentos */
+.archivos-sec { margin-bottom: 16px; }
+.archivos-tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--linea); }
+.arch-tab { border: 0; background: none; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--suave); border-bottom: 2px solid transparent; }
+.arch-tab[aria-selected="true"] { color: var(--acento); border-bottom-color: var(--acento); }
+.arch-panel[hidden] { display: none; }
+.arch-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.foto { position: relative; border-radius: 8px; overflow: hidden; background: var(--fondo); aspect-ratio: 4/3; }
+.foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto .principal { position: absolute; left: 6px; top: 6px; background: var(--acento); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.foto .foto-acc { position: absolute; right: 4px; top: 4px; display: flex; gap: 4px; }
+.foto .foto-acc button { border: 0; border-radius: 999px; background: rgba(20,26,36,.7); color: #fff; font-size: 11px; padding: 3px 7px; cursor: pointer; }
+.docs-lista { display: grid; gap: 8px; }
+.doc-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--fondo); border-radius: 8px; border: 1px solid var(--linea); }
+.doc-item .doc-icono { font-size: 20px; flex: none; }
+.doc-item .doc-nombre { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-item a { font-size: 12px; color: var(--acento); white-space: nowrap; }
+.doc-item button { border: 0; background: none; cursor: pointer; color: var(--tenue); font-size: 15px; }
+.arch-estado { font-size: 12px; color: var(--suave); margin-top: 6px; }
+.progreso-wrap { height: 4px; background: var(--linea); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.progreso-barra { height: 100%; background: var(--acento); border-radius: 2px; transition: width .3s; width: 0; }
+
+/* Campos del formulario */
+.campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 14px; }
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo.ancho { grid-column: 1 / -1; }
+.campo.privado label::after { content: " 🔒"; font-size: 10px; }
+.campo label { font-size: 12px; font-weight: 600; color: var(--suave); }
+.campo input, .campo select, .campo textarea { padding: 9px 10px; border: 1px solid var(--linea); border-radius: 8px; background: #fff; width: 100%; transition: border-color var(--trans); }
+.campo textarea { min-height: 70px; resize: vertical; }
+.campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento2); }
+.campo.cambiado input, .campo.cambiado select, .campo.cambiado textarea { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento2); }
+.campo.auto input, .campo.auto select, .campo.auto textarea { background: var(--aviso); }
+.campo .pista { font-size: 11px; color: var(--tenue); }
+.campo input[readonly] { background: var(--fondo); color: var(--suave); cursor: not-allowed; }
+
+/* Mensajes */
+.mensaje { border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-bottom: 12px; }
+.mensaje.ok { background: var(--ok); }
+.mensaje.error { background: var(--alerta2); color: var(--alerta); }
+.mensaje.aviso { background: var(--aviso); }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--tinta); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 13px; z-index: 30; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); pointer-events: none; }
+.toast[hidden] { display: none; }
+
+/* Sección de comisión (solo visible si estado = Vendido/Alquilado) */
+.campo-comision[hidden] { display: none; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 560px) {
+  .inm .precio-d { display: none; }
+  .precio-m { display: block; }
+  .temp-resumen { grid-template-columns: repeat(2, 1fr); }
+  .capa { padding: 0; align-items: flex-end; }
+  .hoja { border-radius: 16px 16px 0 0; max-height: 92vh; }
+  .hoja-pie { border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PANTALLA DE LOGIN (se muestra hasta que el PIN sea válido)
+     ============================================================ -->
+<div id="login-wrap" class="login-wrap">
+  <div class="login-caja">
+    <div class="login-logo" id="login-logo">A</div>
+    <h1>Panel de administración</h1>
+    <p id="login-desc">Ingresa tu PIN de acceso para continuar.</p>
+    <input class="pin-input" id="pin-input" type="password" inputmode="numeric"
+           maxlength="8" placeholder="••••••" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') loginPin()" />
+    <button class="pin-submit" id="pin-submit" onclick="loginPin()">Entrar</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL PRINCIPAL (oculto hasta autenticar)
+     ============================================================ -->
+<div id="panel-wrap" hidden>
+
+<header>
+  <div class="barra">
+    <h1>Panel · <span id="nombre-cliente"></span></h1>
+    <span class="sync" id="sync" aria-live="polite"></span>
+    <span class="usuario" id="usuario"></span>
+    <button class="btn" style="margin-left:auto;font-size:12px;padding:5px 10px" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+  <nav class="pestanas" role="tablist">
+    <button class="pestana" role="tab" id="tab-inm"   aria-selected="true"  onclick="verPestana('inm')">Inmuebles <span class="num" id="num-inm"></span></button>
+    <button class="pestana" role="tab" id="tab-leads" aria-selected="false" onclick="verPestana('leads')">Leads <span class="num" id="num-leads"></span></button>
+    <button class="pestana" role="tab" id="tab-req"   aria-selected="false" onclick="verPestana('req')">Requerimientos <span class="num" id="num-req"></span></button>
+  </nav>
+</header>
+
+<main>
+  <!-- Inmuebles -->
+  <section id="sec-inm">
+    <div class="herramientas">
+      <input class="buscar" id="buscar-inm" type="search" placeholder="Buscar tipo, barrio, conjunto, ID…" oninput="pintarInmuebles()">
+      <button class="btn btn-primario" onclick="abrirInmueble(null)">+ Nuevo inmueble</button>
+    </div>
+    <div class="chips" id="chips-inm"></div>
+    <div class="lista" id="lista-inm"><p class="cargando">Cargando inmuebles…</p></div>
+  </section>
+
+  <!-- Leads -->
+  <section id="sec-leads" hidden>
+    <div class="herramientas">
+      <input class="buscar" id="buscar-leads" type="search" placeholder="Buscar nombre, WhatsApp, inmueble, zona…" oninput="pintarLeads()">
+      <button class="btn" onclick="cargarLeads()">Actualizar</button>
+    </div>
+    <div class="temp-resumen" id="temp-resumen"></div>
+    <div class="chips" id="chips-leads"></div>
+    <div class="lista" id="lista-leads"><p class="cargando">Cargando leads…</p></div>
+  </section>
+
+  <!-- Requerimientos -->
+  <section id="sec-req" hidden>
+    <div class="herramientas">
+      <input class="buscar" id="buscar-req" type="search" placeholder="Buscar tipo, barrio, cliente, entidad…" oninput="pintarReq()">
+      <button class="btn btn-primario" onclick="abrirReq(null)">+ Nuevo requerimiento</button>
+    </div>
+    <div class="chips" id="chips-req"></div>
+    <div class="lista" id="lista-req"><p class="cargando">Cargando requerimientos…</p></div>
+  </section>
+</main>
+
+<!-- ============================================================
+     MODAL — FORMULARIO DE INMUEBLE
+     ============================================================ -->
+<div class="capa" id="capa" hidden onclick="if(event.target===this) cerrarInmueble()">
+  <div class="hoja" role="dialog" aria-modal="true" aria-labelledby="hoja-titulo">
+    <div class="hoja-cab">
+      <h2 id="hoja-titulo">Inmueble</h2>
+      <button class="cerrar" aria-label="Cerrar" onclick="cerrarInmueble()">×</button>
+    </div>
+    <div class="hoja-cuerpo">
+      <div id="hoja-mensaje"></div>
+
+      <!-- Paso 1: ¿de quién es? (solo para nuevo) -->
+      <div id="origen" hidden>
+        <p class="origen-pregunta">¿De quién es este inmueble?</p>
+        <div class="origen-opciones">
+          <button class="origen-btn" onclick="elegirOrigen('Propio')">
+            Captado por mí
+            <small>Lo subo desde cero con mis fotos. Tendrá ficha para colegas.</small>
+          </button>
+          <button class="origen-btn" onclick="elegirOrigen('Colega')">
+            De un colega
+            <small>Con el link de su CRM, o con el texto que mandó por WhatsApp. Si no tiene link, se generará una ficha propia para compartir.</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2: formulario -->
+      <div id="formulario" hidden>
+
+        <!-- Link de ficha para colegas (solo cuando no hay "Link ficha externa") -->
+        <div class="link-colega" id="link-colega" hidden>
+          <b>Ficha para colegas:</b>
+          <input id="link-colega-url" readonly aria-label="Link de ficha para colegas">
+          <button class="btn btn-primario" onclick="copiarLinkColega()">Copiar link</button>
+          <a class="btn" id="link-colega-ver" target="_blank" rel="noopener">Ver</a>
+        </div>
+
+        <!-- Extractor de URL -->
+        <details class="importar" id="importar">
+          <summary>Llenar desde un link de CRM o texto de WhatsApp</summary>
+          <div class="fila-url">
+            <input id="imp-url" type="url" placeholder="https://ficha.crmred.co/…">
+            <button class="btn btn-primario" id="imp-btn" onclick="llenarDesdeUrl()">Leer ficha</button>
+          </div>
+          <textarea id="imp-texto" placeholder="Si la página no se deja leer, pega aquí el texto del anuncio o mensaje de WhatsApp con los datos del inmueble."></textarea>
+          <p class="ayuda" style="font-size:12px;color:var(--suave);margin-top:6px">Los campos llenados automáticamente quedan en amarillo: revísalos antes de guardar.</p>
+        </details>
+
+        <!-- FOTOS Y DOCUMENTOS (pestañas) -->
+        <div class="archivos-sec" id="archivos-sec">
+          <div class="archivos-tabs">
+            <button class="arch-tab" id="tab-fotos" aria-selected="true"  onclick="verArchTab('fotos')">📷 Fotos</button>
+            <button class="arch-tab" id="tab-docs"  aria-selected="false" onclick="verArchTab('docs')">📄 Documentos</button>
+          </div>
+
+          <!-- Panel fotos -->
+          <div id="panel-fotos" class="arch-panel">
+            <div class="arch-acciones">
+              <label class="btn">
+                + Subir fotos
+                <input type="file" id="fotos-input" accept="image/*,.heic,.heif" multiple hidden
+                       onchange="subirArchivos(this.files,'foto'); this.value=''">
+              </label>
+              <span class="arch-estado" id="fotos-estado">La primera foto es la imagen principal. También puedes pegar imágenes con Ctrl+V.</span>
+            </div>
+            <div class="link-colega" style="margin-bottom:10px">
+              <input id="fotos-pegar" placeholder="O pega aquí uno o varios links de fotos, separados por coma o salto de línea" style="flex:1 1 260px">
+              <button class="btn" onclick="agregarFotosPegadas()">Agregar</button>
+            </div>
+            <div class="progreso-wrap" id="prog-fotos" hidden><div class="progreso-barra" id="prog-fotos-b"></div></div>
+            <div class="fotos-grid" id="fotos-grid"></div>
+          </div>
+
+          <!-- Panel documentos (escrituras, certificados, etc.) -->
+          <div id="panel-docs" class="arch-panel" hidden>
+            <div class="arch-acciones">
+              <label class="btn">
+                + Subir documento (PDF / imagen)
+                <input type="file" id="docs-input" accept=".pdf,image/*,.heic,.heif" multiple hidden
+                       onchange="subirArchivos(this.files,'doc'); this.value=''">
+              </label>
+              <span class="arch-estado" id="docs-estado" style="font-size:12px;color:var(--suave)">
+                Escrituras, certificados de tradición, poderes, etc. Solo los ven los administradores.
+              </span>
+            </div>
+            <div class="progreso-wrap" id="prog-docs" hidden><div class="progreso-barra" id="prog-docs-b"></div></div>
+            <div class="docs-lista" id="docs-lista"></div>
+          </div>
+        </div>
+
+        <!-- Campos del inmueble divididos en secciones -->
+        <div id="sec-publicos">
+          <div class="campos" id="campos-publicos"></div>
+        </div>
+
+        <div class="form-seccion" id="sec-privados">
+          <div class="form-seccion-cab" onclick="toggleSeccion('cuerpo-privados')">
+            <span>🔒 Información privada (solo administradores)</span>
+            <span id="icon-privados">▾</span>
+          </div>
+          <div class="form-seccion-cuerpo" id="cuerpo-privados">
+            <div class="campos" id="campos-privados"></div>
+          </div>
+        </div>
+
+        <!-- Comisión (visible solo cuando estado = Vendido / Alquilado) -->
+        <div class="form-seccion campo-comision" id="sec-comision" hidden>
+          <div class="form-seccion-cab">
+            <span>💰 Comisión (declaración de renta)</span>
+          </div>
+          <div class="form-seccion-cuerpo">
+            <div class="campos" id="campos-comision"></div>
+          </div>
+        </div>
+
+      </div><!-- /formulario -->
+    </div><!-- /hoja-cuerpo -->
+    <div class="hoja-pie">
+      <span class="msg" id="pie-msg"></span>
+      <button class="btn" id="btn-borrar" style="color:var(--alerta);border-color:var(--alerta)" onclick="borrarInmueble()" hidden>Borrar inmueble</button>
+      <button class="btn" onclick="cerrarInmueble()">Cancelar</button>
+      <button class="btn btn-primario" id="btn-guardar" onclick="guardarInmueble()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL — FORMULARIO DE REQUERIMIENTO
+     ============================================================ -->
+<div class="capa" id="capa-req" hidden onclick="if(event.target===this) cerrarReq()">
+  <div class="hoja" role="dialog" aria-modal="true" aria-labelledby="req-titulo">
+    <div class="hoja-cab">
+      <h2 id="req-titulo">Requerimiento</h2>
+      <button class="cerrar" aria-label="Cerrar" onclick="cerrarReq()">×</button>
+    </div>
+    <div class="hoja-cuerpo">
+      <div id="req-mensaje"></div>
+      <p style="font-size:12px;color:var(--suave);margin-bottom:12px">
+        Cliente y Teléfono son privados y no salen en el tablero público.
+      </p>
+      <div class="campos" id="req-campos"></div>
+    </div>
+    <div class="hoja-pie">
+      <span class="msg" id="req-pie"></span>
+      <button class="btn" onclick="cerrarReq()">Cancelar</button>
+      <button class="btn btn-primario" id="req-guardar" onclick="guardarReq()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /panel-wrap -->
+
+<div class="toast" id="toast" hidden></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     Este archivo es la versión alojada en GitHub Pages del Panel.
+     Datos del cliente: js/config.js. Backend: el Web App de Apps Script.
+     ============================================================ -->
+<script src="js/config.js?v=6"></script>
+<script>
+/* ============================================================
+   CONFIG (inyectada por panel.gs / doGet)
+   ============================================================ */
+var CFG = {
+  scriptUrl:        CONFIG.LEADS_WEBAPP_URL,
+  fichaUrl:         CONFIG.FICHA_URL || 'https://ficha.miraleads.pro/',
+  catalogoUrl:      CONFIG.BASE_URL || '',
+  espejoId:         CONFIG.SPREADSHEET_ID,
+  version:          '1.2.0-un-cliente'
+};
+document.getElementById('nombre-cliente').textContent = CONFIG.MARCA_NOMBRE || '';
+document.title = 'Panel · ' + (CONFIG.MARCA_NOMBRE || '');
+var SESION_KEY = 'lc_sesion';
+
+/* ============================================================
+   ESTADO GLOBAL
+   ============================================================ */
+var S = {
+  sesionId:   sessionStorage.getItem(SESION_KEY) || '',
+  inm:        null,
+  leads:      null,
+  req:        null,
+  edicion:    null,  // {fila, huella, iniciales, auto, carpeta}
+  edReq:      null,
+  filtroInm:  '',
+  filtroLead: 'Todos',
+  filtroTemp: '',
+  filtroReq:  'Activas',
+  cargando:   { leads: false, req: false }
+};
+
+/* ============================================================
+   LOGIN / PIN
+   ============================================================ */
+function loginPin() {
+  var pin = document.getElementById('pin-input').value.trim();
+  var err = document.getElementById('login-error');
+  var btn = document.getElementById('pin-submit');
+  if (!pin) { err.textContent = 'Ingresa tu PIN.'; return; }
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  err.textContent = '';
+  api({ accion: 'autenticar', pin: pin }, true).then(function (r) {
+    if (!r.ok) throw new Error(r.error || 'PIN incorrecto.');
+    S.sesionId = r.sesionId;
+    sessionStorage.setItem(SESION_KEY, r.sesionId);
+    document.getElementById('login-wrap').hidden = true;
+    document.getElementById('panel-wrap').hidden = false;
+    iniciarPanel();
+  }).catch(function (e) {
+    document.getElementById('pin-input').classList.add('error');
+    err.textContent = e.message || 'Error de conexión.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+    setTimeout(function () { document.getElementById('pin-input').classList.remove('error'); }, 1000);
+  });
+}
+
+function cerrarSesion() {
+  sessionStorage.removeItem(SESION_KEY);
+  location.reload();
+}
+
+/* Si ya hay sesión guardada, entrar directo */
+if (S.sesionId) {
+  document.getElementById('login-wrap').hidden = true;
+  document.getElementById('panel-wrap').hidden = false;
+}
+
+/* ============================================================
+   API — LLAMADAS AL BACKEND
+   ============================================================ */
+function api(payload, sinSesion) {
+  if (!sinSesion) payload.sesionId = S.sesionId;
+  return fetch(CFG.scriptUrl, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  }).then(function (r) {
+    return r.json();
+  }).then(function (r) {
+    if (r && r.error === 'Sesión inválida o vencida.') {
+      sessionStorage.removeItem(SESION_KEY);
+      location.reload();
+    }
+    return r;
+  });
+}
+
+/* ============================================================
+   COLA DE GUARDADOS
+   ============================================================ */
+var pendientes = 0, tSync;
+function enCola(p) {
+  pendientes++; pintarSync();
+  var fin = function () { pendientes--; pintarSync(); };
+  p.then(fin, fin);
+  return p;
+}
+function pintarSync() {
+  var el = document.getElementById('sync');
+  clearTimeout(tSync);
+  if (pendientes > 0) { el.className = 'sync activo'; el.textContent = 'Guardando' + (pendientes > 1 ? ' (' + pendientes + ')' : '') + '…'; return; }
+  el.className = 'sync ok'; el.textContent = '✓ Todo guardado';
+  tSync = setTimeout(function () { el.textContent = ''; }, 3000);
+}
+window.addEventListener('beforeunload', function (e) { if (pendientes > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function norm(s) { return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function fotoUrl(u) {
+  u = String(u||'').trim();
+  var m = /drive\.google\.com\/(?:uc\?(?:[^#\s]*&)?id=|file\/d\/|open\?id=|thumbnail\?(?:[^#\s]*&)?id=)([\w-]{20,})/.exec(u);
+  return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : u;
+}
+function segUrl(u) { return /^https?:\/\//i.test(String(u||'')) ? String(u) : ''; }
+function formatPrecio(v) {
+  var n = Number(String(v||'').replace(/[^0-9.]/g,''));
+  if (!n) return '';
+  return '$' + n.toLocaleString('es-CO');
+}
+function waUrl(tel) {
+  var d = String(tel||'').replace(/\D/g,'');
+  if (d.length===10 && d[0]==='3') d='57'+d;
+  return d.length>=11 ? 'https://wa.me/'+d : '';
+}
+var tToast;
+function toast(txt, dur) {
+  var t = document.getElementById('toast');
+  t.textContent = txt; t.hidden = false;
+  clearTimeout(tToast); tToast = setTimeout(function(){t.hidden=true;}, dur||4000);
+}
+var avisoSalida = 0;
+function confirmarSalida() {
+  if (Date.now() - avisoSalida < 4000) return true;
+  avisoSalida = Date.now();
+  toast('Tienes cambios sin guardar. Vuelve a cerrar para descartarlos.');
+  return false;
+}
+function toggleSeccion(id) {
+  var el = document.getElementById(id);
+  el.hidden = !el.hidden;
+  var icon = el.id.replace('cuerpo-','icon-');
+  var ic = document.getElementById(icon);
+  if (ic) ic.textContent = el.hidden ? '▸' : '▾';
+}
+
+/* ============================================================
+   PESTAÑAS PRINCIPALES
+   ============================================================ */
+function verPestana(cual) {
+  ['inm','leads','req'].forEach(function(k) {
+    document.getElementById('tab-'+k).setAttribute('aria-selected', cual===k);
+    document.getElementById('sec-'+k).hidden = cual!==k;
+  });
+  if (cual==='leads' && !S.leads && !S.cargando.leads) cargarLeads();
+  if (cual==='req'   && !S.req   && !S.cargando.req)   cargarReq();
+}
+
+/* ============================================================
+   INMUEBLES — LISTAR
+   ============================================================ */
+function cargarInmuebles() {
+  return api({ accion: 'leerPortafolio' }).then(function (r) {
+    if (!r.ok) throw new Error(r.error || 'Error al cargar');
+    S.inm = _procesarPortafolio(r);
+    document.getElementById('num-inm').textContent = S.inm.filas.length;
+    pintarChipsInm();
+    pintarInmuebles();
+  }).catch(function (e) {
+    document.getElementById('lista-inm').innerHTML = '<div class="mensaje error">'+esc(e.message)+'</div>';
+  });
+}
+
+function _procesarPortafolio(r) {
+  var enc = r.encabezados || [];
+  // Construir mapa clave→índice usando el mismo IMP_mapa_ lógico del extractor
+  var MAPA_CLAVES = {
+    id:'id', tipo:'tipo', proyecto:'proyecto', barrio:'barrio',
+    precio:'precio', canon:'canon', area:'area', habitaciones:'habitaciones',
+    banos:'baños', parqueadero:'parqueadero', piso:'piso', estrato:'estrato',
+    estado:'estado', servicio:'servicio', credito:'credito', observaciones:'observaciones',
+    link:'link', fotos:'fotos', captacion:'captacion',
+    encargado:'encargado', celular:'celular',
+    notasPrivadas:'notas privadas', documentos:'documentos', comision:'comision'
+  };
+  var idx = {};
+  enc.forEach(function(h, i) {
+    var n = norm(h).replace(/\s+/g,'_');
+    Object.keys(MAPA_CLAVES).forEach(function(clave) {
+      if (idx[clave] !== undefined) return;
+      var pat = norm(MAPA_CLAVES[clave]).replace(/\s+/g,'_');
+      if (n === pat || n.indexOf(pat)===0) idx[clave] = i;
+    });
+  });
+  var filas = (r.filas || []).map(function(f, rowIdx) {
+    var obj = { _fila: rowIdx + 2, _vals: f }; // fila 2-based para la hoja
+    Object.keys(idx).forEach(function(clave) { obj[clave] = String(f[idx[clave]]||'').trim(); });
+    // Primera URL de fotos = imagen principal de la tarjeta
+    if (obj.fotos) {
+      var urls = obj.fotos.split(/[\s,]+/).map(fotoUrl).filter(Boolean);
+      obj.fotos = urls.join('\n');
+      obj._img = urls[0] || '';
+      obj._fotos = urls;
+    } else {
+      obj._img = ''; obj._fotos = [];
+    }
+    return obj;
+  }).filter(function(f) { return !/eliminado/i.test(f.estado||''); });
+  return { enc: enc, idx: idx, filas: filas };
+}
+
+function pintarChipsInm() {
+  var cuenta = {};
+  S.inm.filas.forEach(function(f){ var e=f.estado||'Sin estado'; cuenta[e]=(cuenta[e]||0)+1; });
+  var claves = Object.keys(cuenta).sort(function(a,b){return cuenta[b]-cuenta[a];});
+  var html = '<button class="chip" aria-pressed="'+(!S.filtroInm)+'" data-v="">Todos</button>';
+  claves.forEach(function(k){ html += '<button class="chip" aria-pressed="'+(S.filtroInm===k)+'" data-v="'+esc(k)+'">'+esc(k)+' · '+cuenta[k]+'</button>'; });
+  var cont = document.getElementById('chips-inm');
+  cont.innerHTML = html;
+  cont.querySelectorAll('.chip').forEach(function(b){
+    b.onclick = function(){ S.filtroInm = b.dataset.v; pintarChipsInm(); pintarInmuebles(); };
+  });
+}
+
+function pintarInmuebles() {
+  if (!S.inm) return;
+  var q = norm(document.getElementById('buscar-inm').value);
+  var filas = S.inm.filas.filter(function(f) {
+    if (S.filtroInm && (f.estado||'Sin estado') !== S.filtroInm) return false;
+    return !q || norm([f.tipo,f.barrio,f.proyecto,f.id,f.encargado].join(' ')).indexOf(q)!==-1;
+  });
+  var cont = document.getElementById('lista-inm');
+  if (!filas.length) { cont.innerHTML = '<p class="vacio">No hay inmuebles con ese filtro.</p>'; return; }
+  cont.innerHTML = filas.slice(0,300).map(function(f) {
+    var precio = f.precio ? formatPrecio(f.precio) : (f.canon ? formatPrecio(f.canon)+'/mes' : '');
+    var det = [f.habitaciones?f.habitaciones+' hab':'', f.area?f.area+' m²':'', f.id].filter(Boolean).join(' · ');
+    return '<button class="inm" data-fila="'+f._fila+'">' +
+      (f._img ? '<img class="inm-img" referrerpolicy="no-referrer" loading="lazy" src="'+esc(f._img)+'" alt="">' : '<span class="inm-sinfoto">Sin foto</span>') +
+      '<span class="info"><div class="tit">'+esc([f.tipo,f.barrio].filter(Boolean).join(' · ')||'Sin datos')+'</div>' +
+      '<div class="sub">'+esc([f.proyecto,det].filter(Boolean).join(' — '))+'</div>' +
+      (precio ? '<div class="precio-m">'+esc(precio)+'</div>' : '') +
+      (f.estado ? '<span class="etq'+(/disponible/i.test(f.estado)?' disp':'')+'">'+esc(f.estado)+'</span>' : '') +
+      (/propio/i.test(f.captacion||'') ? '<span class="etq propia">Propio</span>' : '') +
+      '</span><span class="precio-d">'+esc(precio)+'</span></button>';
+  }).join('');
+  cont.querySelectorAll('.inm').forEach(function(b){
+    b.onclick = function(){ abrirInmueble(Number(b.dataset.fila)); };
+  });
+}
+
+/* ============================================================
+   INMUEBLES — FORMULARIO
+   ============================================================ */
+var CAMPOS_PUBLICOS = ['tipo','proyecto','barrio','precio','canon','area','habitaciones','banos','parqueadero','piso','estrato','estado','servicio','credito','observaciones','link'];
+var CAMPOS_PRIVADOS = ['encargado','celular','notasPrivadas'];
+var CAMPOS_COMISION = ['comision'];
+var CAMPOS_READONLY = ['id'];
+
+var OPCIONES = {
+  tipo:   ['Apartamento','Apartaestudio','Casa Independiente','Casa en Conjunto','Casa Campestre','Local','Oficina','Bodega','Lote','Finca'],
+  estado: ['Disponible','Reservado','Vendido','Arrendado','No disponible'],
+  servicio: ['Venta','Arriendo','Venta y Arriendo'],
+  captacion: ['Propio','Colega'],
+  credito: ['Sí','No','Aplica subsidio'],
+  parqueadero: ['No tiene','Comunitario','Privado']
+};
+
+function abrirInmueble(fila) {
+  document.getElementById('hoja-mensaje').innerHTML = '';
+  document.getElementById('pie-msg').textContent = '';
+  document.getElementById('imp-url').value = '';
+  document.getElementById('imp-texto').value = '';
+  document.getElementById('importar').open = false;
+  document.getElementById('btn-guardar').disabled = true;
+  document.getElementById('link-colega').hidden = true;
+  document.getElementById('sec-comision').hidden = true;
+  document.getElementById('btn-borrar').hidden = !fila;
+  _fotosPintadas = null;
+  document.getElementById('capa').hidden = false;
+  document.body.style.overflow = 'hidden';
+
+  if (!fila) {
+    S.edicion = { fila: null, huella: '', vals: {}, auto: {}, carpetaId: 'nuevo-'+Date.now() };
+    document.getElementById('origen').hidden = false;
+    document.getElementById('formulario').hidden = true;
+    document.getElementById('hoja-titulo').textContent = 'Nuevo inmueble';
+    return;
+  }
+
+  document.getElementById('origen').hidden = true;
+  document.getElementById('formulario').hidden = false;
+  document.getElementById('hoja-titulo').textContent = 'Editar inmueble';
+  document.getElementById('campos-publicos').innerHTML = '<p class="cargando">Cargando…</p>';
+
+  // Buscar en estado local
+  var f = S.inm.filas.filter(function(x){return x._fila===fila;})[0];
+  if (!f) return;
+  S.edicion = { fila: fila, huella: '', vals: f, auto: {}, carpetaId: f.id||('fila-'+fila) };
+  _pintarFormulario();
+  document.getElementById('btn-guardar').disabled = false;
+  _mostrarLinkColega();
+  _mostrarComision();
+}
+
+function elegirOrigen(v) {
+  document.getElementById('origen').hidden = true;
+  document.getElementById('formulario').hidden = false;
+  document.getElementById('btn-guardar').disabled = false;
+  S.edicion.vals = S.edicion.vals || {};
+  S.edicion.vals.captacion = v;
+  var colega = v === 'Colega';
+  document.getElementById('importar').hidden = !colega;
+  document.getElementById('importar').open = colega;
+  document.getElementById('hoja-titulo').textContent = colega ? 'Nuevo inmueble de colega' : 'Nuevo inmueble propio';
+  _pintarFormulario();
+  marcarCambios();
+}
+
+function _pintarFormulario() {
+  var vals = S.edicion.vals || {};
+  _renderCampos('campos-publicos',  CAMPOS_PUBLICOS, vals, false);
+  _renderCampos('campos-privados',  CAMPOS_PRIVADOS, vals, true);
+  _renderCampos('campos-comision',  CAMPOS_COMISION, vals, true);
+  _pintarFotos();
+  _pintarDocs();
+  marcarCambios();
+}
+
+function _renderCampos(contenedorId, claves, vals, privados) {
+  var cont = document.getElementById(contenedorId);
+  if (!cont) return;
+  cont.innerHTML = claves.map(function(clave) {
+    var v = String(vals[clave]||'').trim();
+    var titulo = _tituloLabel(clave);
+    var ancho = ['observaciones','notasPrivadas','link','fotos'].indexOf(clave)!==-1 ? ' ancho' : '';
+    var readonly = CAMPOS_READONLY.indexOf(clave)!==-1;
+    var ops = OPCIONES[clave];
+    var control;
+    if (readonly) {
+      control = '<input id="f-'+clave+'" value="'+esc(v)+'" readonly>';
+    } else if (clave === 'comision') {
+      control = '<input id="f-'+clave+'" type="text" inputmode="numeric" value="'+esc(v)+'" placeholder="Ej: 12000000">';
+    } else if (clave === 'notasPrivadas') {
+      control = '<textarea id="f-'+clave+'">'+esc(v)+'</textarea>';
+    } else if (clave === 'observaciones') {
+      control = '<textarea id="f-'+clave+'">'+esc(v)+'</textarea>';
+    } else if (ops) {
+      var optHtml = '<option value=""></option>' + ops.map(function(o){ return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>'; }).join('');
+      control = '<select id="f-'+clave+'">'+optHtml+'</select>';
+    } else if (clave==='precio'||clave==='canon'||clave==='area'||clave==='habitaciones'||clave==='banos'||clave==='piso'||clave==='estrato') {
+      control = '<input id="f-'+clave+'" type="text" inputmode="decimal" value="'+esc(v)+'">';
+    } else {
+      control = '<input id="f-'+clave+'" type="text" value="'+esc(v)+'">';
+    }
+    var pista = _pista(clave);
+    var clasePriv = privados ? ' privado' : '';
+    return '<div class="campo'+ancho+clasePriv+'" data-clave="'+clave+'"><label for="f-'+clave+'">'+esc(titulo)+'</label>'+control+(pista?'<span class="pista">'+pista+'</span>':'')+'</div>';
+  }).join('');
+
+  cont.querySelectorAll('input,select,textarea').forEach(function(el){
+    el.addEventListener('input', function(){
+      marcarCambios();
+      if (el.id==='f-link') _mostrarLinkColega();
+    });
+    el.addEventListener('change', function(){
+      marcarCambios();
+      if (el.id==='f-estado') _mostrarComision();
+      if (el.id==='f-link') _mostrarLinkColega();
+    });
+  });
+}
+
+function _tituloLabel(clave) {
+  var m = {
+    tipo:'Tipo', proyecto:'Proyecto / Nombre', barrio:'Barrio / Zona',
+    precio:'Precio de venta', canon:'Precio arriendo (mes)',
+    area:'Área m²', habitaciones:'Habitaciones', banos:'Baños',
+    parqueadero:'Parqueadero(s)', piso:'Piso', estrato:'Estrato',
+    estado:'Estado', servicio:'Servicio', credito:'Aplica crédito',
+    observaciones:'Observaciones públicas', link:'Link ficha externa',
+    captacion:'Captación', encargado:'Encargado', celular:'Celular encargado',
+    notasPrivadas:'Notas privadas', documentos:'Documentos', comision:'Comisión (COP)',
+    id:'ID (automático)'
+  };
+  return m[clave] || clave;
+}
+
+function _pista(clave) {
+  var m = {
+    precio: 'Solo números, ej. 245000000',
+    canon:  'Solo números, ej. 2500000',
+    observaciones: 'Pública — la ven los visitantes del catálogo. Teléfonos y correos se ocultan solos.',
+    notasPrivadas: 'Privada — solo la ven los administradores. Puedes anotar saldo de hipoteca, condiciones, etc.',
+    comision: 'En pesos. Se registra cuando el negocio está cerrado.',
+    id: 'El sistema lo asigna automáticamente.'
+  };
+  return m[clave] || '';
+}
+
+function _mostrarComision() {
+  var el = document.getElementById('f-estado');
+  var sec = document.getElementById('sec-comision');
+  if (!el || !sec) return;
+  sec.hidden = !/vendido|alquilado|arrendado/i.test(el.value);
+}
+
+function _mostrarLinkColega() {
+  var caja = document.getElementById('link-colega');
+  var ed = S.edicion;
+  // La ficha propia solo aplica cuando NO hay "Link ficha externa": si ya
+  // existe un link de origen (CRM del colega, p. ej.), ese es el que se
+  // comparte y no hace falta generar uno propio.
+  var linkEl = document.getElementById('f-link');
+  var linkVal = linkEl ? linkEl.value.trim() : String((ed&&ed.vals&&ed.vals.link)||'').trim();
+  if (!ed || !ed.fila || linkVal || !CFG.fichaUrl || !CFG.espejoId) {
+    caja.hidden = true; return;
+  }
+  var id = (ed.vals && ed.vals.id) || '';
+  if (!id) { caja.hidden = true; return; }
+  // Ficha compartida: recibe el espejo del cliente y el ID del inmueble.
+  var url = CFG.fichaUrl + '?sheet=' + encodeURIComponent(CFG.espejoId) + '&id=' + encodeURIComponent(id);
+  document.getElementById('link-colega-url').value = url;
+  var ver = document.getElementById('link-colega-ver');
+  ver.href = url; ver.hidden = false;
+  caja.hidden = false;
+}
+
+function copiarLinkColega() {
+  var v = document.getElementById('link-colega-url').value;
+  if (!/^https/.test(v)) return;
+  navigator.clipboard && navigator.clipboard.writeText(v).then(function(){ toast('Link copiado. ¡Ya lo puedes compartir por WhatsApp!'); });
+}
+
+/* ---- Cambios / validación ---- */
+function valorCampo(clave) {
+  var el = document.getElementById('f-'+clave); return el ? el.value.trim() : '';
+}
+function marcarCambios() {
+  var ed = S.edicion;
+  if (!ed) return;
+  var n = 0;
+  var todos = CAMPOS_PUBLICOS.concat(CAMPOS_PRIVADOS).concat(CAMPOS_COMISION);
+  todos.forEach(function(clave){
+    var el = document.getElementById('f-'+clave);
+    if (!el) return;
+    var original = String((ed.vals&&ed.vals[clave])||'').trim();
+    var cambiado = el.value.trim() !== original;
+    var div = el.closest('.campo');
+    if (div) div.classList.toggle('cambiado', cambiado);
+    if (cambiado) n++;
+  });
+  _pintarFotos();
+  document.getElementById('pie-msg').textContent = n ? n+' campo(s) con cambios' : (S.edicion.fila?'Sin cambios':'');
+}
+function cambiosActuales() {
+  var cambios = {}, n = 0;
+  var todos = CAMPOS_PUBLICOS.concat(CAMPOS_PRIVADOS).concat(CAMPOS_COMISION);
+  todos.forEach(function(clave){
+    var el = document.getElementById('f-'+clave);
+    if (!el) return;
+    var original = String((S.edicion&&S.edicion.vals&&S.edicion.vals[clave])||'').trim();
+    if (el.value.trim() !== original) { cambios[clave] = el.value.trim(); n++; }
+  });
+  // Incluir fotos si cambiaron
+  var fotosActuales = _listaFotos().join('\n');
+  var fotasOrig = String((S.edicion&&S.edicion.vals&&S.edicion.vals.fotos)||'').trim();
+  if (fotosActuales !== fotasOrig) { cambios.fotos = fotosActuales; n++; }
+  // Incluir documentos si cambiaron
+  var docsActuales = _listaDocs().join('\n');
+  var docsOrig = String((S.edicion&&S.edicion.vals&&S.edicion.vals.documentos)||'').trim();
+  if (docsActuales !== docsOrig) { cambios.documentos = docsActuales; n++; }
+  // Captación: no tiene campo propio en el formulario (se elige en la pantalla
+  // "¿De quién es este inmueble?" al crear), así que se incluye solo al crear uno nuevo.
+  if (!S.edicion.fila && S.edicion.vals && S.edicion.vals.captacion) {
+    cambios.captacion = S.edicion.vals.captacion; n++;
+  }
+  return { cambios: cambios, n: n };
+}
+
+function cerrarInmueble() {
+  if (S.edicion && cambiosActuales().n && !confirmarSalida()) return;
+  document.getElementById('capa').hidden = true;
+  document.body.style.overflow = '';
+  S.edicion = null;
+}
+
+/* ---- Guardar inmueble ---- */
+function guardarInmueble() {
+  var estadoEl = document.getElementById('f-estado');
+  if (estadoEl && !estadoEl.value.trim()) {
+    document.getElementById('hoja-mensaje').innerHTML = '<div class="mensaje error">Elige un Estado antes de guardar (Disponible, Reservado, Vendido, Arrendado o No disponible).</div>';
+    estadoEl.focus();
+    return;
+  }
+  var c = cambiosActuales();
+  if (!c.n) { toast('No hay cambios para guardar.'); return; }
+  var ed = S.edicion;
+  S.edicion = null;
+  document.getElementById('capa').hidden = true;
+  document.body.style.overflow = '';
+  toast(ed.fila ? 'Cambios guardados.' : 'Inmueble agregado.');
+
+  enCola(api({ accion: 'guardarInmueble', fila: ed.fila, campos: c.cambios })).then(function(r){
+    if (!r.ok) throw new Error(r.error||'Error al guardar');
+    return cargarInmuebles();
+  }).catch(function(e){
+    toast('Error: '+e.message+'. Abre el inmueble de nuevo.', 6000);
+    cargarInmuebles();
+  });
+}
+
+/** Borra (marca como Eliminado) el inmueble que se está editando. No borra la fila, por historial. */
+function borrarInmueble() {
+  var ed = S.edicion;
+  if (!ed || !ed.fila) return;
+  var titulo = [ed.vals && ed.vals.tipo, ed.vals && ed.vals.barrio].filter(Boolean).join(' · ') || 'este inmueble';
+  if (!confirm('¿Borrar "'+titulo+'"? Dejará de verse en el catálogo público y en el panel. Esta acción no se puede deshacer desde aquí.')) return;
+  S.edicion = null;
+  document.getElementById('capa').hidden = true;
+  document.body.style.overflow = '';
+  toast('Inmueble borrado.');
+  enCola(api({ accion: 'eliminarInmueble', fila: ed.fila })).then(function(r){
+    if (!r.ok) throw new Error(r.error||'Error al borrar');
+    return cargarInmuebles();
+  }).catch(function(e){
+    toast('Error al borrar: '+e.message, 6000);
+    cargarInmuebles();
+  });
+}
+
+/* ============================================================
+   FOTOS — gestión unificada (columna única)
+   ============================================================ */
+var _fotosPintadas = null;
+
+function _listaFotos() {
+  // Lee las URLs del estado en memoria
+  return (S.edicion && S.edicion._fotosLista) || (S.edicion && S.edicion.vals && S.edicion.vals._fotos) || [];
+}
+
+function _setFotos(lista) {
+  if (!S.edicion) return;
+  S.edicion._fotosLista = lista.filter(function(u){return segUrl(u);});
+  marcarCambios();
+}
+
+/** Agrega a la lista de fotos los links pegados a mano, separados por coma o salto de línea. */
+function agregarFotosPegadas() {
+  var campo = document.getElementById('fotos-pegar');
+  var urls = campo.value.split(/[\s,]+/).map(function(u){return u.trim();}).filter(Boolean);
+  var validas = urls.filter(function(u){return segUrl(u);});
+  var invalidas = urls.length - validas.length;
+  if (validas.length) _setFotos(_listaFotos().concat(validas));
+  campo.value = '';
+  if (invalidas) toast(invalidas+' link(s) ignorados: deben empezar con http:// o https://');
+}
+
+function _pintarFotos() {
+  var lista = _listaFotos();
+  var clave = lista.join('|');
+  if (clave === _fotosPintadas) return;
+  _fotosPintadas = clave;
+  var grid = document.getElementById('fotos-grid');
+  if (!lista.length) { grid.innerHTML = '<p style="color:var(--tenue);font-size:13px">Todavía no hay fotos.</p>'; return; }
+  grid.innerHTML = lista.map(function(u, i){
+    return '<div class="foto">'+
+      (segUrl(u)?'<img referrerpolicy="no-referrer" loading="lazy" src="'+esc(u)+'" alt="Foto '+(i+1)+'">':'')+
+      (i===0?'<span class="principal">Principal</span>':'')+
+      '<span class="foto-acc">'+
+      (i>0?'<button data-acc="principal" data-i="'+i+'" title="Usar como principal">★</button>':'')+
+      '<button data-acc="quitar" data-i="'+i+'" title="Quitar" aria-label="Quitar foto">✕</button>'+
+      '</span></div>';
+  }).join('');
+  grid.querySelectorAll('button').forEach(function(b){
+    b.onclick = function(){
+      var i = Number(b.dataset.i), l = _listaFotos().slice();
+      var foto = l.splice(i,1)[0];
+      if (b.dataset.acc==='principal') l.unshift(foto);
+      _setFotos(l);
+    };
+  });
+}
+
+/* ============================================================
+   DOCUMENTOS — gestión (columna "documentos")
+   ============================================================ */
+function _listaDocs() {
+  return (S.edicion && S.edicion._docsLista) ||
+    (S.edicion && S.edicion.vals && S.edicion.vals.documentos
+      ? S.edicion.vals.documentos.split(/[\s,]+/).map(function(u){return u.trim();}).filter(Boolean)
+      : []);
+}
+function _setDocs(lista) {
+  if (!S.edicion) return;
+  S.edicion._docsLista = lista.filter(Boolean);
+  marcarCambios();
+  _pintarDocs();
+}
+function _pintarDocs() {
+  var lista = _listaDocs();
+  var cont = document.getElementById('docs-lista');
+  if (!lista.length) { cont.innerHTML = '<p style="color:var(--tenue);font-size:13px;padding:8px 0">No hay documentos adjuntos.</p>'; return; }
+  cont.innerHTML = lista.map(function(u, i){
+    var nombre = decodeURIComponent(u.split('/').pop().split('?')[0]).replace(/^\d+-/,'') || 'Documento '+(i+1);
+    var isPdf  = /\.pdf/i.test(u);
+    return '<div class="doc-item">'+
+      '<span class="doc-icono">'+(isPdf?'📄':'🖼️')+'</span>'+
+      '<span class="doc-nombre" title="'+esc(u)+'">'+esc(nombre)+'</span>'+
+      '<a href="'+esc(u)+'" target="_blank" rel="noopener">Ver</a>'+
+      '<button data-i="'+i+'" aria-label="Quitar documento" title="Quitar">✕</button>'+
+      '</div>';
+  }).join('');
+  cont.querySelectorAll('button[data-i]').forEach(function(b){
+    b.onclick = function(){ var l=_listaDocs().slice(); l.splice(Number(b.dataset.i),1); _setDocs(l); };
+  });
+}
+
+/* ============================================================
+   SUBIR ARCHIVOS (fotos e imágenes/PDFs de documentos)
+   ============================================================ */
+function verArchTab(cual) {
+  ['fotos','docs'].forEach(function(k){
+    document.getElementById('tab-'+k).setAttribute('aria-selected', cual===k);
+    document.getElementById('panel-'+k).hidden = cual!==k;
+  });
+}
+
+function subirArchivos(archivos, tipo) {
+  archivos = Array.prototype.slice.call(archivos||[]);
+  if (!archivos.length) return;
+  var esFoto = tipo==='foto';
+  var progWrap = document.getElementById(esFoto?'prog-fotos':'prog-docs');
+  var progBarra = document.getElementById(esFoto?'prog-fotos-b':'prog-docs-b');
+  var estadoEl  = document.getElementById(esFoto?'fotos-estado':'docs-estado');
+  var btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  progWrap.hidden = false;
+  var hechos = 0, errores = [];
+  function siguiente(i) {
+    if (i >= archivos.length) {
+      btn.disabled = false; progWrap.hidden = true;
+      estadoEl.textContent = hechos+' archivo(s) subido(s).'+(errores.length?' '+errores.join(' '):'');
+      return;
+    }
+    estadoEl.textContent = 'Subiendo '+(i+1)+' de '+archivos.length+'…';
+    progBarra.style.width = Math.round((i/archivos.length)*100)+'%';
+    var archivo = archivos[i];
+    _procesarArchivo(archivo, esFoto).then(function(res){
+      var mime = res.mime;
+      return api({
+        accion: 'subirArchivo', base64: res.base64, mimeType: mime,
+        nombre: (esFoto?'foto':'doc')+'-'+Date.now()+_ext(archivo.name,mime),
+        idInmueble: (S.edicion&&S.edicion.vals&&S.edicion.vals.id) || S.edicion.carpetaId || 'nuevo'
+      });
+    }).then(function(r){
+      if (!r.ok) throw new Error(r.error||'Error al subir');
+      if (esFoto) { var l=_listaFotos().slice(); l.push(r.url); _setFotos(l); }
+      else        { var d=_listaDocs().slice();  d.push(r.url); _setDocs(d); }
+      hechos++;
+    }).catch(function(e){ errores.push(e.message); }).then(function(){ siguiente(i+1); });
+  }
+  siguiente(0);
+}
+
+/* HEIC/HEIF (fotos del iPhone): se convierten a JPEG en el navegador antes de subir. */
+function _esHeic(f) {
+  return /image\/hei[cf]/i.test(f.type || '') || /\.hei[cf]$/i.test(f.name || '');
+}
+var _heicCargando = null;
+function _cargarHeic2any() {
+  if (window.heic2any) return Promise.resolve();
+  if (_heicCargando) return _heicCargando;
+  _heicCargando = new Promise(function(ok, mal){
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+    s.onload = ok;
+    s.onerror = function(){ _heicCargando = null; mal(new Error('No se pudo cargar el conversor HEIC. Revisa tu conexión.')); };
+    document.head.appendChild(s);
+  });
+  return _heicCargando;
+}
+function _heicAJpeg(archivo) {
+  return _cargarHeic2any().then(function(){
+    return window.heic2any({ blob: archivo, toType: 'image/jpeg', quality: 0.85 });
+  }).then(function(r){
+    var blob = Array.isArray(r) ? r[0] : r;
+    return new File([blob], String(archivo.name || 'foto').replace(/\.hei[cf]$/i, '') + '.jpg', { type: 'image/jpeg' });
+  }).catch(function(e){
+    throw new Error('No se pudo convertir ' + (archivo.name || 'la foto HEIC') + ': ' + (e && e.message ? e.message : 'formato no soportado') + '. Expórtala como JPG.');
+  });
+}
+
+/** Devuelve {base64, mime}. Las fotos se reducen a 1600 px y salen siempre como JPEG. */
+function _procesarArchivo(archivo, reducir) {
+  var previo = _esHeic(archivo) ? _heicAJpeg(archivo) : Promise.resolve(archivo);
+  return previo.then(function(arch){
+    if (!reducir || !/^image/i.test(arch.type)) {
+      // PDF o imagen sin reducir: leer como base64 directamente
+      return new Promise(function(ok,mal){
+        var fr = new FileReader();
+        fr.onload = function(){ ok({ base64: fr.result.split(',')[1], mime: arch.type || 'application/pdf' }); };
+        fr.onerror = function(){ mal(new Error('No se pudo leer '+arch.name)); };
+        fr.readAsDataURL(arch);
+      });
+    }
+    return new Promise(function(ok,mal){
+      var url = URL.createObjectURL(arch);
+      var img = new Image();
+      img.onload = function(){
+        var max=1600, w=img.naturalWidth, h=img.naturalHeight;
+        var s = Math.min(1, max/Math.max(w,h));
+        var c = document.createElement('canvas');
+        c.width=Math.round(w*s); c.height=Math.round(h*s);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        URL.revokeObjectURL(url);
+        ok({ base64: c.toDataURL('image/jpeg',0.82).split(',')[1], mime: 'image/jpeg' });
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); mal(new Error('No se pudo abrir '+arch.name+'. Usa JPG o PNG.')); };
+      img.src = url;
+    });
+  });
+}
+
+function _ext(nombre, mime) {
+  var map = {'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','application/pdf':'.pdf','image/gif':'.gif'};
+  if (map[mime]) return map[mime];
+  var m = nombre.match(/\.[a-z0-9]+$/i);
+  return m ? m[0] : '';
+}
+
+/* ---- Pegar imágenes con Ctrl+V (capturas, imágenes copiadas) ---- */
+document.addEventListener('paste', function(e) {
+  if (!S.edicion || document.getElementById('capa').hidden || document.getElementById('formulario').hidden) return;
+  var cd = e.clipboardData; if (!cd || !cd.items) return;
+  var archivos = [];
+  for (var i = 0; i < cd.items.length; i++) {
+    var it = cd.items[i];
+    if (it.kind === 'file' && /^image\//i.test(it.type)) { var f = it.getAsFile(); if (f) archivos.push(f); }
+  }
+  if (!archivos.length) return;                      // texto normal: no se toca
+  var objetivo = e.target && e.target.tagName;
+  var hayTexto = (cd.getData && cd.getData('text/plain') || '').trim().length > 0;
+  if (hayTexto && (objetivo === 'INPUT' || objetivo === 'TEXTAREA')) return;  // copia de celdas, etc.
+  e.preventDefault();
+  var enDocs = !document.getElementById('panel-docs').hidden;
+  subirArchivos(archivos, enDocs ? 'doc' : 'foto');
+});
+
+/* ============================================================
+   EXTRACTOR DE URL
+   ============================================================ */
+function llenarDesdeUrl() {
+  var url   = document.getElementById('imp-url').value.trim();
+  var texto = document.getElementById('imp-texto').value.trim();
+  var btn   = document.getElementById('imp-btn');
+  var msg   = document.getElementById('hoja-mensaje');
+  btn.disabled = true; btn.textContent = 'Leyendo…';
+  api({ accion: 'extraerUrl', url: url, textoPegado: texto }).then(function(r){
+    if (!r.ok) throw new Error(r.error||'Error al leer');
+    var d = r.datos || {};
+    var n = 0;
+    // Fotos
+    if (d.fotos && d.fotos.length) { _setFotos(d.fotos); n++; }
+    // Campos
+    ['tipo','proyecto','barrio','precio','canon','area','habitaciones','banos','parqueadero','piso','estrato','estado','servicio','credito','observaciones','encargado','celular','link'].forEach(function(clave){
+      var v = d[clave];
+      if (v == null || v === '') return;
+      var el = document.getElementById('f-'+clave);
+      if (!el) return;
+      if (el.tagName==='SELECT') {
+        var existe = Array.prototype.some.call(el.options,function(o){return o.value===v;});
+        if (!existe) { var o=document.createElement('option'); o.textContent=v; el.appendChild(o); }
+      }
+      el.value = v;
+      S.edicion.auto[clave] = true;
+      var div = el.closest('.campo'); if(div) div.classList.add('auto');
+      n++;
+    });
+    marcarCambios();
+    var falt = d.faltantes && d.faltantes.length ? ' No encontré: '+d.faltantes.join(', ')+'.' : '';
+    msg.innerHTML = '<div class="mensaje ok">Se llenaron '+n+' campos desde '+esc(d.proveedor||'la página')+'. Revisa los amarillos.'+esc(falt)+'</div>';
+    document.getElementById('importar').open = false;
+  }).catch(function(e){
+    msg.innerHTML = '<div class="mensaje error">'+esc(e.message)+'</div>';
+  }).then(function(){ btn.disabled=false; btn.textContent='Leer ficha'; });
+}
+
+/* ============================================================
+   LEADS
+   ============================================================ */
+function cargarLeads() {
+  document.getElementById('lista-leads').innerHTML = '<p class="cargando">Cargando leads…</p>';
+  S.cargando.leads = true;
+  return api({ accion: 'leerLeads' }).then(function(r){
+    S.cargando.leads = false;
+    if (!r.ok) throw new Error(r.error||'Error');
+    S.leads = r;
+    document.getElementById('num-leads').textContent = r.filas.length;
+    pintarChipsLeads(); pintarLeads();
+  }).catch(function(e){
+    S.cargando.leads = false;
+    document.getElementById('lista-leads').innerHTML = '<div class="mensaje error">'+esc(e.message)+'</div>';
+  });
+}
+
+var TEMP_N = {verde:'Calientes',amarillo:'Se enfrían',rojo:'Urgentes',vencido:'Vencidos'};
+var TEMP_L = {verde:'Caliente',amarillo:'Se enfría',rojo:'Urgente',vencido:'Vencido'};
+var HORAS  = {verde:48, amarillo:96, vencido:168};
+
+function temperatura(f) {
+  if (!f.fecha || ['Negocio cerrado','No calificado'].indexOf(f.pipeline)!==-1) return null;
+  if (['Calificado','Visita agendada'].indexOf(f.pipeline)!==-1) return null;
+  var ms = new Date(f.fecha).getTime();
+  if (!ms) return null;
+  var h = (Date.now()-ms)/3600000;
+  var niv = h<HORAS.verde?'verde':h<HORAS.amarillo?'amarillo':h<HORAS.vencido?'rojo':'vencido';
+  var edad = h<1?'hace menos de 1 h':h<24?'hace '+Math.floor(h)+' h':'hace '+Math.floor(h/24)+' días';
+  return { nivel: niv, texto: TEMP_L[niv]+' · '+edad };
+}
+
+function pintarChipsLeads() {
+  _pintarResumenTemp();
+  var r = S.leads, cuenta = {Todos: r.filas.length};
+  LC_CONFIG_ETAPAS.forEach(function(e){ cuenta[e] = 0; });
+  r.filas.forEach(function(f){ if(f.pipeline in cuenta) cuenta[f.pipeline]++; });
+  var cont = document.getElementById('chips-leads');
+  cont.innerHTML = ['Todos'].concat(LC_CONFIG_ETAPAS).map(function(et){
+    return '<button class="chip" aria-pressed="'+(S.filtroLead===et)+'" data-v="'+esc(et)+'">'+esc(et)+' · '+(cuenta[et]||0)+'</button>';
+  }).join('');
+  cont.querySelectorAll('.chip').forEach(function(b){
+    b.onclick = function(){ S.filtroLead=b.dataset.v; pintarChipsLeads(); pintarLeads(); };
+  });
+}
+
+var LC_CONFIG_ETAPAS = ['Nuevo','Contactado','Calificado','Visita agendada','Negocio cerrado','No calificado'];
+
+function _pintarResumenTemp() {
+  var cuenta = {verde:0,amarillo:0,rojo:0,vencido:0};
+  (S.leads&&S.leads.filas||[]).forEach(function(f){ var t=temperatura(f); if(t) cuenta[t.nivel]++; });
+  var cont = document.getElementById('temp-resumen');
+  cont.innerHTML = Object.keys(cuenta).map(function(k){
+    return '<button class="temp-caja '+k+'" data-v="'+k+'" aria-pressed="'+(S.filtroTemp===k)+'">'+
+      '<div class="n">'+cuenta[k]+'</div><div class="t">'+TEMP_N[k]+'</div></button>';
+  }).join('');
+  cont.querySelectorAll('.temp-caja').forEach(function(b){
+    b.onclick=function(){ S.filtroTemp=S.filtroTemp===b.dataset.v?'':b.dataset.v; _pintarResumenTemp(); pintarLeads(); };
+  });
+}
+
+function pintarLeads() {
+  var r = S.leads; if (!r) return;
+  var q = norm(document.getElementById('buscar-leads').value);
+  var filas = r.filas.filter(function(f){
+    if (S.filtroLead!=='Todos' && f.pipeline!==S.filtroLead) return false;
+    if (S.filtroTemp) { var t=temperatura(f); if(!t||t.nivel!==S.filtroTemp) return false; }
+    return !q || norm([f.nombre,f.whatsapp,f.inmueble,f.zona,f.origen,f.notas].join(' ')).indexOf(q)!==-1;
+  });
+  var cont = document.getElementById('lista-leads');
+  if (!filas.length) { cont.innerHTML = '<p class="vacio">No hay leads con ese filtro.</p>'; return; }
+  cont.innerHTML = filas.map(leadHtml).join('');
+  cont.querySelectorAll('.lead').forEach(wireLead);
+}
+
+function claseEtapa(e) { return 'e-'+(String(e||'').split(' ')[0]); }
+
+function leadHtml(f) {
+  var r = S.leads;
+  var temp = temperatura(f);
+  var wa = waUrl(f.whatsapp);
+  var m = String(f.enviado||'');
+  var ops = LC_CONFIG_ETAPAS.map(function(e){ return '<option'+(e===f.pipeline?' selected':'')+'>'+esc(e)+'</option>'; }).join('');
+  return '<article class="lead'+(temp?' t-'+temp.nivel:'')+'" data-fila="'+esc(String(f.fila||''))+'">'+
+    '<div class="lead-cab">'+
+      '<div>'+
+        '<div class="nom">'+esc(f.nombre||'Sin nombre')+'</div>'+
+        '<div class="meta">'+esc([f.fecha,f.origen,f.whatsapp].filter(Boolean).join(' · '))+'</div>'+
+        (temp?'<span class="temp '+temp.nivel+'">'+esc(temp.texto)+'</span>':'')+
+      '</div>'+
+      (wa?'<a class="wa" target="_blank" rel="noopener" href="'+esc(wa)+'">WhatsApp</a>':'')+
+    '</div>'+
+    '<div class="lead-datos">'+
+      (f.inmueble?'<div><b>Inmueble:</b> '+esc(f.inmueble)+'</div>':'')+
+      (f.presupuesto?'<div><b>Presupuesto:</b> '+esc(f.presupuesto)+'</div>':'')+
+      (f.zona?'<div><b>Zona:</b> '+esc(f.zona)+'</div>':'')+
+      (f.formaPago?'<div><b>Pago:</b> '+esc(f.formaPago)+'</div>':'')+
+    '</div>'+
+    '<div class="lead-fila">'+
+      '<select class="etapa '+claseEtapa(f.pipeline)+'" aria-label="Etapa">'+ops+'</select>'+
+      '<button class="btn btn-primario guardar">Guardar</button>'+
+      '<button class="btn crear-req" title="Crear requerimiento con datos de este lead">+ Req</button>'+
+    '</div>'+
+    (f.notas?'<div class="notas">'+esc(f.notas)+'</div>':'')+
+    '<textarea class="nota" rows="1" placeholder="Agregar nota…"></textarea>'+
+    (m?'<div class="estado-meta'+(m.indexOf('✗')!==-1?' error':'')+'" style="font-size:12px;color:var(--tenue);margin-top:6px">Meta: '+esc(m)+'</div>':'')+
+    '</article>';
+}
+
+function wireLead(art) {
+  var sel = art.querySelector('.etapa');
+  sel.onchange = function(){ sel.className='etapa '+claseEtapa(sel.value); };
+  art.querySelector('.guardar').onclick = function(){ guardarLead(art); };
+  art.querySelector('.crear-req').onclick = function(){ reqDesdeLead(art.dataset.fila); };
+}
+
+function guardarLead(art) {
+  var fila = Number(art.dataset.fila);
+  var f = S.leads.filas.filter(function(x){return x.fila===fila;})[0];
+  if (!f) return;
+  var etapa = art.querySelector('.etapa').value;
+  var nota  = art.querySelector('.nota').value.trim();
+  if (etapa===f.pipeline && !nota) { toast('No hay cambios.'); return; }
+  var antes = {pipeline:f.pipeline, notas:f.notas};
+  f.pipeline = etapa;
+  if (nota) f.notas = (f.notas?f.notas+'\n':'')+'[ahora] '+nota;
+  art.querySelector('.etapa').className='etapa '+claseEtapa(etapa);
+  toast('Guardado.');
+  enCola(api({ accion: 'actualizarPipeline', fila: fila, etapa: etapa, nota: nota })).then(function(r){
+    if (!r.ok) throw new Error(r.error||'Error');
+  }).catch(function(e){
+    f.pipeline=antes.pipeline; f.notas=antes.notas;
+    toast('No se guardó ('+e.message+'). Se devolvió el cambio.', 5000);
+    pintarLeads();
+  });
+}
+
+/* ============================================================
+   REQUERIMIENTOS
+   ============================================================ */
+function cargarReq() {
+  document.getElementById('lista-req').innerHTML = '<p class="cargando">Cargando…</p>';
+  S.cargando.req = true;
+  return api({ accion: 'leerReqs' }).then(function(r){
+    S.cargando.req = false;
+    if (!r.ok) throw new Error(r.error||'Error');
+    S.req = r;
+    var activas = r.filas.filter(function(f){return !/cerrada/i.test(f.estado||'');}).length;
+    document.getElementById('num-req').textContent = activas;
+    pintarChipsReq(); pintarReq();
+  }).catch(function(e){
+    S.cargando.req = false;
+    document.getElementById('lista-req').innerHTML = '<div class="mensaje error">'+esc(e.message)+'</div>';
+  });
+}
+
+function pintarChipsReq() {
+  var f = S.req.filas;
+  var n = { Activas: f.filter(function(x){return !/cerrada/i.test(x.estado||'');}).length, Todas: f.length };
+  n.Cerradas = n.Todas - n.Activas;
+  var cont = document.getElementById('chips-req');
+  cont.innerHTML = ['Activas','Cerradas','Todas'].map(function(k){
+    return '<button class="chip" aria-pressed="'+(S.filtroReq===k)+'" data-v="'+k+'">'+k+' · '+n[k]+'</button>';
+  }).join('');
+  cont.querySelectorAll('.chip').forEach(function(b){
+    b.onclick=function(){ S.filtroReq=b.dataset.v; pintarChipsReq(); pintarReq(); };
+  });
+}
+
+function pintarReq() {
+  if (!S.req) return;
+  var q = norm(document.getElementById('buscar-req').value);
+  var filas = S.req.filas.filter(function(f){
+    var cerr = /cerrada/i.test(f.estado||'');
+    if (S.filtroReq==='Activas' && cerr) return false;
+    if (S.filtroReq==='Cerradas' && !cerr) return false;
+    return !q || norm([f.tipo,f.barrio,f.zona,f.presupuesto,f.observaciones].join(' ')).indexOf(q)!==-1;
+  });
+  var cont = document.getElementById('lista-req');
+  if (!filas.length) { cont.innerHTML = '<p class="vacio">Sin requerimientos.</p>'; return; }
+  cont.innerHTML = filas.map(function(f){
+    var cerr = /cerrada/i.test(f.estado||'');
+    var wa = f.telefono ? waUrl(f.telefono) : '';
+    return '<article class="req'+(cerr?' cerrada':'')+'" data-fila="'+f.fila+'">'+
+      '<div class="req-cab"><span class="tit">'+esc(f.tipo||'Inmueble')+'</span>'+
+      (cerr?'<span class="etq cerrada">Cerrada</span>':'')+
+      (f.presupuesto?'<span class="pres">$'+esc(f.presupuesto)+'M</span>':'')+
+      '</div>'+
+      (f.barrio||f.zona?'<div class="det"><b>Zona:</b> '+esc([f.barrio,f.zona].filter(Boolean).join(' · '))+'</div>':'')+
+      (f.formaPago?'<div class="det"><b>Pago:</b> '+esc(f.formaPago)+(f.entidad?' · '+esc(f.entidad):'')+'</div>':'')+
+      (f.cliente||f.telefono?'<div class="det"><b>Cliente:</b> '+esc(f.cliente||'—')+
+        (f.telefono?' · '+(wa?'<a target="_blank" href="'+esc(wa)+'">'+esc(f.telefono)+'</a>':esc(f.telefono)):'')+'</div>':'')+
+      (f.observaciones?'<div class="obs">'+esc(f.observaciones)+'</div>':'')+
+      '<div class="acciones">'+
+      '<button class="btn" data-acc="editar">Editar</button>'+
+      (!cerr?'<button class="btn btn-primario" data-acc="copiar">📋 Copiar para WhatsApp</button>':'')+
+      (!cerr?'<button class="btn" data-acc="cerrar">Cerrar</button>':'<button class="btn" data-acc="reabrir">Reabrir</button>')+
+      '</div></article>';
+  }).join('');
+  cont.querySelectorAll('.req').forEach(function(art){
+    var fila = Number(art.dataset.fila);
+    art.querySelectorAll('[data-acc]').forEach(function(b){
+      b.onclick=function(){ accionReq(fila, b.dataset.acc); };
+    });
+  });
+}
+
+function accionReq(fila, acc) {
+  var f = S.req && S.req.filas.filter(function(x){return x.fila===fila;})[0];
+  if (acc==='editar') { abrirReq(f); return; }
+  if (acc==='copiar') { _copiarReqWhatsapp(f); return; }
+  var antes = f.estado;
+  if (acc==='cerrar')  f.estado='Cerrada';
+  if (acc==='reabrir') f.estado='Activa';
+  pintarChipsReq(); pintarReq();
+  toast(acc==='cerrar'?'Requerimiento cerrado.':'Reactivado.');
+  enCola(api({ accion: 'guardarReq', fila: fila, campos: {estado: f.estado} })).catch(function(e){
+    f.estado=antes; pintarChipsReq(); pintarReq();
+    toast('No se guardó ('+e.message+').');
+  });
+}
+
+/**
+ * Arma el texto listo para pegar en los grupos de WhatsApp de colegas:
+ *
+ *   Busco 🔍APARTAMENTO para COMPRA:
+ *
+ *   • Sector: ...
+ *   • Crédito Hipotecario Bancolombia 💳
+ *   • <observaciones>
+ *
+ *   Precio: $450 millones.
+ *
+ *   Ver más solicitudes
+ *   👉 <link al tablero público>
+ */
+function _textoReqWhatsapp(f) {
+  var tipo = (f.tipo || 'inmueble').toUpperCase();
+  var lineas = ['Busco 🔍' + tipo + ' para COMPRA:', ''];
+
+  if (f.barrio) lineas.push('• Sector: ' + f.barrio);
+
+  var pago = [f.formaPago, f.entidad].filter(Boolean).join(' ');
+  if (pago) lineas.push('• ' + pago + ' 💳');
+
+  if (f.observaciones) lineas.push('• ' + f.observaciones);
+
+  lineas.push('');
+  if (f.presupuesto) lineas.push('Precio: $' + f.presupuesto + ' millones.');
+
+  var base = String(CFG.catalogoUrl || '').trim();
+  if (base) {
+    lineas.push('');
+    lineas.push('Ver más solicitudes');
+    lineas.push('👉 ' + base.replace(/\/$/, '') + '/solicitudes/');
+  }
+
+  return lineas.join('\n');
+}
+
+function _copiarReqWhatsapp(f) {
+  if (!f) return;
+  var texto = _textoReqWhatsapp(f);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(function(){
+      toast('Texto copiado — pégalo en el grupo de WhatsApp.');
+    }).catch(function(){
+      toast('No se pudo copiar automáticamente. Cópialo manual del cuadro.', 6000);
+    });
+  } else {
+    toast('Tu navegador no permite copiar automático.', 6000);
+  }
+}
+
+var REQ_CAMPOS = [
+  {clave:'tipo',titulo:'Tipo de inmueble',op:['Apartamento','Apartaestudio','Casa','Local','Oficina','Lote']},
+  {clave:'barrio',titulo:'Barrio / Zona'},
+  {clave:'presupuesto',titulo:'Presupuesto (millones)',tip:'Número, ej. 250'},
+  {clave:'formaPago',titulo:'Forma de pago',op:['Crédito hipotecario','Contado','Subsidio VIS','Leasing']},
+  {clave:'entidad',titulo:'Entidad / banco'},
+  {clave:'estado',titulo:'Estado',op:['Activa','Cerrada']},
+  {clave:'observaciones',titulo:'Qué busca (público)',ancho:true,tip:'Lo ven los colegas. No incluyas nombre ni teléfono.'},
+  {clave:'cliente',titulo:'Nombre del cliente (privado)',tip:'Privado'},
+  {clave:'telefono',titulo:'Teléfono del cliente (privado)',tip:'Privado'},
+  {clave:'contacto',titulo:'Último contacto (dd/mm)'}
+];
+
+function abrirReq(f, prellenado) {
+  S.edReq = {
+    fila: f ? f.fila : null,
+    vals: f ? Object.assign({}, f) : Object.assign({estado:'Activa'}, prellenado||{})
+  };
+  document.getElementById('req-titulo').textContent = f ? 'Editar requerimiento' : 'Nuevo requerimiento';
+  document.getElementById('req-mensaje').innerHTML = '';
+  _pintarCamposReq();
+  document.getElementById('capa-req').hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function _pintarCamposReq() {
+  var vals = S.edReq.vals||{};
+  document.getElementById('req-campos').innerHTML = REQ_CAMPOS.map(function(c,n){
+    var v = String(vals[c.clave]||'').trim(), id='rq'+n;
+    var ctrl;
+    if (c.clave==='observaciones') ctrl='<textarea id="'+id+'">'+esc(v)+'</textarea>';
+    else if (c.op) ctrl='<select id="'+id+'"><option value=""></option>'+c.op.map(function(o){return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select>';
+    else ctrl='<input id="'+id+'" value="'+esc(v)+'"'+(c.clave==='telefono'?' inputmode="tel"':c.clave==='presupuesto'?' inputmode="decimal"':'')+' />';
+    return '<div class="campo'+(c.ancho?' ancho':'')+'"><label for="'+id+'">'+esc(c.titulo)+'</label>'+ctrl+(c.tip?'<span class="pista">'+esc(c.tip)+'</span>':'')+'</div>';
+  }).join('');
+}
+
+function cerrarReq() {
+  document.getElementById('capa-req').hidden = true;
+  document.body.style.overflow = '';
+  S.edReq = null;
+}
+
+function guardarReq() {
+  var ed = S.edReq; if (!ed) return;
+  var cambios = {};
+  REQ_CAMPOS.forEach(function(c,n){
+    var el = document.getElementById('rq'+n);
+    if (el) cambios[c.clave] = el.value.trim();
+  });
+  cerrarReq();
+  toast(ed.fila?'Requerimiento actualizado.':'Requerimiento creado.');
+  enCola(api({ accion: 'guardarReq', fila: ed.fila||0, campos: cambios })).then(function(){
+    return cargarReqSilencioso();
+  }).catch(function(e){ toast('Error: '+e.message, 5000); });
+}
+
+function reqDesdeLead(fila) {
+  var f = S.leads&&S.leads.filas.filter(function(x){return x.fila==fila;})[0];
+  if (!f) return;
+  verPestana('req');
+  abrirReq(null, {
+    cliente: f.nombre, telefono: f.whatsapp,
+    tipo: '', presupuesto: f.presupuesto||'', barrio: f.zona||'',
+    formaPago: /contado/i.test(f.formaPago||'')?'Contado':/cr[eé]dito/i.test(f.formaPago||'')?'Crédito hipotecario':'',
+    observaciones: f.inmueble?'Llegó por: '+f.inmueble:''
+  });
+}
+
+function cargarReqSilencioso() {
+  return api({ accion: 'leerReqs' }).then(function(r){
+    if (!r.ok) return;
+    S.req = r;
+    pintarChipsReq(); pintarReq();
+  }).catch(function(){});
+}
+
+/* ============================================================
+   INICIO DEL PANEL
+   ============================================================ */
+function iniciarPanel() {
+  cargarInmuebles().then(function(){
+    setTimeout(function(){
+      if (!S.leads && !S.cargando.leads) cargarLeads();
+      if (!S.req   && !S.cargando.req)   cargarReq();
+    }, 400);
+  });
+}
+
+/* Si ya había sesión, iniciar directo */
+if (S.sesionId) iniciarPanel();
+</script>
+</body>
+</html>
