@@ -373,11 +373,6 @@ function cardHtml(listing) {
   if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") meta.push(cardMeta("car", `${escapeHtml(listing.parqueadero)} parq.`));
   if (listing.piso) meta.push(cardMeta("layers", pisoOrNivelesLabel(listing)));
 
-  const waMsg = `Hola Javier, me interesa el ${titulo}${listing.id ? ` (Ref. ${listing.id})` : ""}.`;
-  const wa = whatsappConfigured()
-    ? `<a class="card-whatsapp track-contact" href="${escapeAttr(whatsappLink(waMsg))}" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp sobre este inmueble" data-tipo="${escapeAttr(listing.tipo)}" data-barrio="${escapeAttr(listing.barrio)}" data-price="${price.amount || ""}">${ICONS.wa}</a>`
-    : "";
-
   return `
     <article class="card">
       <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
@@ -394,7 +389,6 @@ function cardHtml(listing) {
         <div class="card-meta">${meta.join("")}</div>
         <div class="card-actions">
           <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa <span aria-hidden="true">→</span></button>
-          ${wa}
         </div>
       </div>
     </article>
