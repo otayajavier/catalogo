@@ -161,14 +161,23 @@ function shortHash(str) {
 function makeCatalogId(rawTipo, rawBarrio, rawPrecio, uniqueSeed) {
   return `${slugify(`${rawTipo}-${rawBarrio}-${rawPrecio}`)}-${shortHash(uniqueSeed)}`;
 }
+// Con el ID del Portafolio (P0001…) el enlace queda "tipo-barrio-P0001", igual
+// que los links del feed de Meta (?ver=...). El ID no cambia aunque se edite
+// el precio, el barrio o el tipo.
+function slugLimpio(str) {
+  return slugify(str).replace(/^-+|-+$/g, "");
+}
+function makeCatalogIdFromId(rawTipo, rawBarrio, id) {
+  return [slugLimpio(rawTipo), slugLimpio(rawBarrio), id].filter(Boolean).join("-").replace(/-+/g, "-");
+}
 
 // ─────────────────────────────────────────────────────────────
 // Carga de datos desde Google Sheets API
 // ─────────────────────────────────────────────────────────────
 async function fetchSheetData() {
-  if (!CONFIG.API_KEY || CONFIG.API_KEY === "PEGA_AQUI_TU_API_KEY") {
+  if (!CONFIG.API_KEY || /^PENDIENTE|^PEGA_AQUI/.test(CONFIG.API_KEY) || !CONFIG.SPREADSHEET_ID || /^PENDIENTE/.test(CONFIG.SPREADSHEET_ID)) {
     document.getElementById("loading-state").textContent =
-      "Falta configurar la API key en js/config.js (ver README.md).";
+      "Falta configurar SPREADSHEET_ID y API_KEY en js/config.js (ver INSTALAR-ALEJANDRO.md).";
     return null;
   }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(CONFIG.RANGE)}?key=${CONFIG.API_KEY}`;
@@ -188,7 +197,9 @@ function rowsToPublicListings(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0].map(normalizeHeader);
 
+  // Encabezados del espejo público (los pone el backend desde la hoja Maestra).
   const col = {
+    id: headers.findIndex((h) => h === "id"),
     tipo: findCol(headers, "tipo"),
     barrio: findCol(headers, "barrio", "zona"),
     precio: headers.findIndex((h) => h.includes("precio") && !h.includes("arriendo")),
@@ -203,41 +214,46 @@ function rowsToPublicListings(values) {
     servicio: findCol(headers, "servicio"),
     credito: findCol(headers, "credito"),
     linkFicha: findCol(headers, "link", "ficha"),
-    imagen: findCol(headers, "imagen"),
-    masFotos: findCol(headers, "foto"),
+    imagen: findCol(headers, "imagen"), // columna antigua; el espejo nuevo solo trae "Fotos"
+    fotos: findCol(headers, "fotos", "foto"),
     fechaVenta: findCol(headers, "fecha"),
   };
+  const celda = (row, i) => (i > -1 ? String(row[i] || "").trim() : "");
 
   const allRows = values
     .slice(1)
     .filter((row) => row.some((cell) => cell && cell.trim && cell.trim() !== ""))
     .map((row) => {
-      const imagenPrincipal = (row[col.imagen] || "").trim();
-      const masFotos = (row[col.masFotos] || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const photos = [imagenPrincipal, ...masFotos].filter((v, i, arr) => v && arr.indexOf(v) === i);
+      // "Fotos" trae todas las URLs separadas por salto de línea (o coma);
+      // la primera es la imagen principal de la tarjeta.
+      const fotosCelda = celda(row, col.fotos).split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
+      const photos = [celda(row, col.imagen), ...fotosCelda].filter((v, i, arr) => v && arr.indexOf(v) === i);
+      const id = celda(row, col.id);
+      const tipo = celda(row, col.tipo) || "Inmueble";
+      const barrio = celda(row, col.barrio) || "Cali";
 
       return {
-        catalogId: makeCatalogId(row[col.tipo], row[col.barrio], row[col.precio], row[col.linkFicha]),
-        tipo: row[col.tipo] || "Inmueble",
-        barrio: row[col.barrio] || "Cali",
+        id,
+        catalogId: id
+          ? makeCatalogIdFromId(tipo, barrio, id)
+          : makeCatalogId(tipo, barrio, row[col.precio], row[col.linkFicha]),
+        tipo,
+        barrio,
         precio: parseCOP(row[col.precio]),
         canon: parseCOP(row[col.canon]),
         area: parseFloat(row[col.area]) || 0,
         habitaciones: parseInt(row[col.habitaciones], 10) || 0,
         banos: parseInt(row[col.banos], 10) || 0,
-        parqueadero: (row[col.parqueadero] || "").trim(),
-        piso: (row[col.piso] || "").trim(),
-        estrato: (row[col.estrato] || "").trim(),
-        estado: (row[col.estado] || "").trim(),
-        servicio: (row[col.servicio] || "").trim(),
-        credito: (row[col.credito] || "").trim().toLowerCase(),
-        linkFicha: (row[col.linkFicha] || "").trim(),
-        imagen: imagenPrincipal,
+        parqueadero: celda(row, col.parqueadero),
+        piso: celda(row, col.piso),
+        estrato: celda(row, col.estrato),
+        estado: celda(row, col.estado),
+        servicio: celda(row, col.servicio),
+        credito: celda(row, col.credito).toLowerCase(),
+        linkFicha: celda(row, col.linkFicha),
+        imagen: photos[0] || "",
         photos,
-        fechaVenta: (row[col.fechaVenta] || "").trim(),
+        fechaVenta: celda(row, col.fechaVenta),
       };
     });
 
@@ -341,25 +357,29 @@ function cardHtml(listing) {
   const price = priceForCard(listing);
   const badgeClass = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "arriendo" : "venta";
   const badgeText = listing.servicio || "Disponible";
+  const creditBucket = creditoBucket(listing.credito);
+  const creditChip = creditBucket === "si" ? "Aplica crédito" : creditBucket === "no" ? "Solo contado" : "";
 
+  // Cada dato lleva su ícono (los íconos se definen más abajo en ICONS).
   const specs = [];
-  if (listing.area) specs.push(`${listing.area} m²`);
-  if (listing.habitaciones) specs.push(`${listing.habitaciones} hab.`);
-  if (listing.banos) specs.push(`${listing.banos} baños`);
-  if (listing.piso) specs.push(pisoOrNivelesLabel(listing));
-  if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push(`Parqueadero ${escapeHtml(listing.parqueadero)}`);
-  specs.push(creditoLabel(listing.credito));
+  if (listing.habitaciones) specs.push([ICONS.bed, `${escapeHtml(listing.habitaciones)} hab.`]);
+  if (listing.banos) specs.push([ICONS.bath, `${escapeHtml(listing.banos)} baños`]);
+  if (listing.area) specs.push([ICONS.area, `${escapeHtml(listing.area)} m²`]);
+  if (listing.parqueadero && listing.parqueadero.toLowerCase() !== "no") specs.push([ICONS.car, `${escapeHtml(listing.parqueadero)} parq.`]);
+  if (listing.piso) specs.push([ICONS.layers, pisoOrNivelesLabel(listing)]);
 
   return `
     <article class="card">
       <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
-        <img src="${escapeAttr(img)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+        <img src="${escapeAttr(img)}" alt="${escapeAttr(listing.tipo)} en ${escapeAttr(listing.barrio)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${PLACEHOLDER_IMG}'">
         <span class="card-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+        ${creditChip ? `<span class="card-credit">${creditChip}</span>` : ""}
       </button>
       <div class="card-body">
         <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
         <h3 class="card-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h3>
-        <div class="card-specs">${specs.map((s) => `<span>${s}</span>`).join("")}</div>
+        <p class="card-location">${ICONS.pin}<span>${escapeHtml(listing.barrio)}</span></p>
+        <div class="card-specs">${specs.map(([icon, text]) => `<span class="spec">${icon}${text}</span>`).join("")}</div>
         <div class="card-actions">
           <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa →</button>
         </div>
@@ -377,6 +397,7 @@ const ICONS = {
   bath: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3ZM6 12V6a2 2 0 0 1 2-2c1 0 1.6.6 2 1M3 19h18"/></svg>`,
   layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5"/></svg>`,
   car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17M6 17v2M18 17v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.1 7-11a7 7 0 0 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
   credito: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>`,
 };
 
@@ -486,7 +507,7 @@ function detailHtml(listing) {
             <p class="detail-lead-error" id="detail-lead-error" hidden>Completa los 3 campos para continuar.</p>
           </form>` : ""}
         ${listing.linkFicha ? `<a class="detail-crm-link" href="${escapeAttr(listing.linkFicha)}" target="_blank" rel="noopener">Ver ficha técnica completa →</a>` : ""}
-        <a class="detail-crm-link" href="/catalogo/credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
+        <a class="detail-crm-link" href="${SITE_BASE}credito/?valor=${listing.precio}">Simular crédito para este inmueble →</a>
       </div>
 
       ${similares.length ? `
@@ -499,16 +520,7 @@ function detailHtml(listing) {
 }
 
 function enviarLeadASheet(data) {
-  if (!CONFIG.LEADS_WEBAPP_URL || CONFIG.LEADS_WEBAPP_URL === "PEGA_AQUI_LA_URL_DEL_WEB_APP") return;
-  // "no-cors": no necesitamos leer la respuesta, solo que quede guardado.
-  // "keepalive": el envío se completa aunque enseguida se abra WhatsApp.
-  fetch(CONFIG.LEADS_WEBAPP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    keepalive: true,
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(Object.assign({}, data, datosParaMeta())),
-  }).catch(() => {});
+  enviarLeadBackend(data); // js/lead-api.js
 }
 
 function wireDetailLeadForm(listing) {
@@ -543,7 +555,7 @@ function wireDetailLeadForm(listing) {
     const inmuebleUrl = `${window.location.origin}${urlWithVer(listing.catalogId)}`;
 
     const eventId = trackPixel("Lead", {
-      content_ids: [listing.catalogId],
+      content_ids: [listing.id || listing.catalogId],
       content_name: inmuebleTexto,
       value: price || undefined,
       currency: "COP",
@@ -844,8 +856,10 @@ function buscarPorCodigo(lista, id) {
 function datosDesdeId(id) {
   const sinCodigo = String(id || "").split("-").slice(0, -1).join("-");
   const m = /^(.*?)-*((?:\d+-)*\d+)?$/.exec(sinCodigo) || [];
-  const texto = (m[1] || "").replace(/-+$/, "");
-  const precio = m[2] ? parseInt(m[2].replace(/-/g, ""), 10) : 0;
+  let texto = (m[1] || "").replace(/-+$/, "");
+  let precio = m[2] ? parseInt(m[2].replace(/-/g, ""), 10) : 0;
+  // Los enlaces nuevos no llevan precio; un número chico al final es parte del barrio.
+  if (precio < 1000000) { texto = sinCodigo.replace(/-+$/, ""); precio = 0; }
   let tipo = "";
   let barrio = texto;
   const tipos = [...new Set(todosLosInmuebles.map((l) => l.tipo))].sort((a, b) => b.length - a.length);
@@ -970,7 +984,7 @@ function openDetail(id, { mode = "push" } = {}) {
   else if (mode === "replace") window.history.replaceState({ ver: id }, "", urlWithVer(id));
 
   trackPixel("ViewContent", {
-    content_ids: [listing.catalogId],
+    content_ids: [listing.id || listing.catalogId],
     content_type: "product",
     content_name: `${listing.tipo} en ${listing.barrio}`,
     value: priceForCard(listing).amount || undefined,

@@ -50,7 +50,7 @@ function buscarInmueble(values, id) {
   const fila = values.slice(1).find((r) => norm(r[c.id]) === buscado);
   if (!fila) return null;
   const g = (k) => (c[k] >= 0 ? String(fila[c[k]] || "").trim() : "");
-  const fotos = [g("imagen"), ...g("fotos").split(",")].map((u) => seguroUrl(u)).filter((u, i, a) => u && a.indexOf(u) === i);
+  const fotos = [g("imagen"), ...g("fotos").split(/[\s,]+/)].map((u) => seguroUrl(u)).filter((u, i, a) => u && a.indexOf(u) === i);
   return {
     id: g("id"), tipo: g("tipo") || "Inmueble", barrio: g("barrio"), precio: numero(g("precio")), canon: numero(g("canon")),
     area: g("area"), habitaciones: g("habitaciones"), banos: g("banos"), parqueadero: g("parqueadero"), piso: g("piso"),

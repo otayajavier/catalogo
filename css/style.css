@@ -280,10 +280,16 @@ body {
 .card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 1px 2px rgba(35, 43, 34, 0.06), 0 6px 18px rgba(35, 43, 34, 0.07);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgba(35, 43, 34, 0.08), 0 14px 28px rgba(35, 43, 34, 0.13);
 }
 
 .card-image-link {
@@ -314,10 +320,11 @@ body {
   left: 12px;
   font-size: 11px;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 5px 11px;
   border-radius: 999px;
   color: #fff;
   letter-spacing: 0.01em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 .card-badge.venta { background: var(--tag-venta); }
 .card-badge.arriendo { background: var(--tag-arriendo); }
@@ -335,18 +342,21 @@ body {
 }
 
 .card-body {
-  padding: 16px 18px 18px;
+  padding: 18px 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
 }
 
 .card-price {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--forest-dark);
-  margin: 0;
+  margin: 0 0 2px;
 }
 .card-price small {
   font-family: var(--font-body);
@@ -357,19 +367,35 @@ body {
 
 .card-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--ink);
 }
+
+.card-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.card-location svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--brass); }
+.card-location span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .card-specs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 8px 12px;
   font-size: 13px;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
+.card-specs .spec { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.card-specs .spec svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--forest); }
 
 .card-link {
   margin-top: auto;
@@ -399,7 +425,8 @@ body {
   padding-top: 10px;
   border-top: 1px solid var(--line);
 }
-.card-actions .card-link { border-top: none; padding-top: 0; margin-top: 0; }
+.card-actions .card-link { border-top: none; padding: 0; margin-top: 0; }
+.card-actions { border-top: none; padding-top: 12px; }
 
 .card-whatsapp {
   display: inline-flex;
