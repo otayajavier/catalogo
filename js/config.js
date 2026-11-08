@@ -26,7 +26,7 @@ const CONFIG = {
   WHATSAPP_MESSAGE: "Hola, quiero más información sobre los inmuebles disponibles.",
 
   // URL del despliegue (Web App) de Apps Script de la cuenta de Javier. Recibe los leads. Termina en /exec.
-  LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbz7ewmu4on5ZVh7InHwgIepyz7VyOS6nLZNaXV2eGMJsTiD4xMgHcRc4XE1-DIujGYXoA/exec",
+  LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyWf5HNp4cee-XmMLamTEo-PvV1h_fYTew3XVLvx748vNiGDT9Lf4ANH1nDrMlDX-cj/exec",
 
   // Dirección pública del sitio, con "/" al final. Debe ser igual a catalogoUrl en config.gs.
   BASE_URL: "https://otayajavier.github.io/catalogo/",
