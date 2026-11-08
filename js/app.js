@@ -193,6 +193,12 @@ async function fetchSheetData() {
 // Solo se extraen los campos que la vitrina pública puede mostrar o necesita
 // para funcionar (link e imagen). Origen, Proyecto/Nombre, Comisión,
 // Observaciones, encargado y celular nunca se leen hacia el objeto público.
+// "$ 350.000" / "350000" / "350.000,00" → 350000 (0 si está vacío o no es número).
+function dineroEntero(txt) {
+  const t = String(txt || "").replace(/[.,]\d{1,2}$/, "");
+  return parseInt(t.replace(/\D/g, ""), 10) || 0;
+}
+
 function rowsToPublicListings(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0].map(normalizeHeader);
@@ -202,6 +208,9 @@ function rowsToPublicListings(values) {
     id: headers.findIndex((h) => h === "id"),
     tipo: findCol(headers, "tipo"),
     barrio: findCol(headers, "barrio", "zona"),
+    ciudad: headers.findIndex((h) => h === "ciudad"),
+    administracion: findCol(headers, "administracion", "admon"),
+    ascensor: findCol(headers, "ascensor"),
     precio: headers.findIndex((h) => h.includes("precio") && !h.includes("arriendo")),
     canon: findCol(headers, "canon", "arriendo"),
     area: findCol(headers, "area"),
@@ -239,6 +248,9 @@ function rowsToPublicListings(values) {
           : makeCatalogId(tipo, barrio, row[col.precio], row[col.linkFicha]),
         tipo,
         barrio,
+        ciudad: celda(row, col.ciudad),
+        administracion: dineroEntero(celda(row, col.administracion)),
+        ascensor: /^(si|sí|s|tiene|con)\b/i.test(celda(row, col.ascensor)),
         precio: parseCOP(row[col.precio]),
         canon: parseCOP(row[col.canon]),
         area: parseFloat(row[col.area]) || 0,
@@ -378,7 +390,7 @@ function cardHtml(listing) {
       <div class="card-body">
         <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
         <h3 class="card-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h3>
-        <p class="card-location">${ICONS.pin}<span>${escapeHtml(listing.barrio)}</span></p>
+        <p class="card-location">${ICONS.pin}<span>${escapeHtml(listing.barrio)}${listing.ciudad ? ", " + escapeHtml(listing.ciudad) : ""}</span></p>
         <div class="card-specs">${specs.map(([icon, text]) => `<span class="spec">${icon}${text}</span>`).join("")}</div>
         <div class="card-actions">
           <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa →</button>
@@ -392,6 +404,8 @@ function cardHtml(listing) {
 // Íconos (línea simple, heredan el color del texto vía currentColor)
 // ─────────────────────────────────────────────────────────────
 const ICONS = {
+  elevator: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m9 10 3-3 3 3M9 14l3 3 3-3"/></svg>`,
+  admin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-5h6v5M9 11h.01M15 11h.01"/></svg>`,
   area: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
   bed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18v2M21 18v2M3 12V8a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v2"/></svg>`,
   bath: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3ZM6 12V6a2 2 0 0 1 2-2c1 0 1.6.6 2 1M3 19h18"/></svg>`,
@@ -477,7 +491,7 @@ function detailHtml(listing) {
 
     <div class="detail-body">
       <p class="detail-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
-      <h2 class="detail-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}</h2>
+      <h2 class="detail-title">${escapeHtml(listing.tipo)} en ${escapeHtml(listing.barrio)}${listing.ciudad ? ", " + escapeHtml(listing.ciudad) : ""}</h2>
 
       <div class="detail-stats">
         ${detailStat("area", listing.area ? `${listing.area} m²` : "", "Área")}
@@ -485,6 +499,8 @@ function detailHtml(listing) {
         ${detailStat("bath", listing.banos || "", listing.banos === 1 ? "Baño" : "Baños")}
         ${detailStat("layers", listing.piso || "", isCasa(listing.tipo) ? "Niveles" : "Piso")}
         ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? detailStat("car", listing.parqueadero, "Parqueadero") : ""}
+        ${listing.ascensor ? detailStat("elevator", "Sí", "Ascensor") : ""}
+        ${listing.administracion ? detailStat("admin", formatCOP(listing.administracion), "Administración") : ""}
         ${detailStat("credito", creditoLabel(listing.credito), "Crédito")}
       </div>
 
