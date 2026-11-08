@@ -6,7 +6,7 @@ const CONFIG = {
   // ID de la hoja ESPEJO PÚBLICA (la que crea el backend), NO el de la Maestra.
   // Sale en el correo de salud y al ejecutar LC_diagnostico en Apps Script
   // (línea "SPREADSHEET_ID para js/config.js del sitio").
-  SPREADSHEET_ID: "PENDIENTE_ID_DEL_ESPEJO",
+  SPREADSHEET_ID: "1IbX4KKEeC2JarWSZxoZKyr9V1p9qSQfLJE0qU2bPF04",
 
   // API key de Google Cloud (Sheets API habilitada, restringida al dominio del sitio).
   API_KEY: "AIzaSyD9dcqg2slJPnkawSjLnLpEVdhVvmmUGrA",
