@@ -17,11 +17,46 @@ function initMetaPixel() {
   fbq('track', 'PageView');
 }
 
+// ─────────────────────────────────────────────────────────────
+// Google Tag Manager (dataLayer) — misma señal que el Pixel, para Google Ads.
+//   ViewContent → view_item · Lead → generate_lead · Contact → whatsapp_click
+// Nunca debe romper el sitio: todo va en try/catch.
+// ─────────────────────────────────────────────────────────────
+function gtmPush(event, params, eventId) {
+  try {
+    const nombres = { ViewContent: "view_item", Lead: "generate_lead", Contact: "whatsapp_click" };
+    const nombre = nombres[event];
+    if (!nombre) return;
+    window.dataLayer = window.dataLayer || [];
+    const p = params || {};
+    if (nombre === "view_item") {
+      window.dataLayer.push({ ecommerce: null });
+      window.dataLayer.push({
+        event: nombre,
+        ecommerce: {
+          currency: p.currency || "COP",
+          value: p.value || 0,
+          items: [{ item_id: (p.content_ids || [])[0], item_name: p.content_name }],
+        },
+      });
+    } else {
+      window.dataLayer.push({
+        event: nombre,
+        content_name: p.content_name,
+        value: p.value,
+        currency: p.currency,
+        lead_event_id: eventId,
+      });
+    }
+  } catch (e) { /* el tracking nunca rompe el sitio */ }
+}
+
 // Devuelve el ID del evento, para guardarlo junto con el lead en la hoja.
 // Así, cuando el lead se califica, el aviso que sale desde la hoja se puede
 // relacionar con este mismo Lead.
 function trackPixel(event, params) {
   const eventId = generateEventId();
+  gtmPush(event, params, eventId);
   if (typeof fbq === "function") fbq("track", event, params || {}, { eventID: eventId });
   return eventId;
 }
