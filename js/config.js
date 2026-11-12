@@ -29,7 +29,7 @@ const CONFIG = {
   LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyWf5HNp4cee-XmMLamTEo-PvV1h_fYTew3XVLvx748vNiGDT9Lf4ANH1nDrMlDX-cj/exec",
 
   // Dirección pública del sitio, con "/" al final. Debe ser igual a catalogoUrl en config.gs.
-  BASE_URL: "https://otayajavier.github.io/catalogo/",
+  BASE_URL: "https://otayajavier.miraleads.pro/",
 
   // Marca
   MARCA_NOMBRE: "Javier Otaya",
