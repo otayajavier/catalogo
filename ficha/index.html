@@ -5,30 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Ficha técnica</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex;
-         align-items: center; justify-content: center; color: #333; text-align: center; padding: 1rem; }
-  a { color: inherit; }
-</style>
+<link rel="stylesheet" href="ficha.css?v=1">
 </head>
 <body>
-<p id="msg">Abriendo la ficha…</p>
+<main class="ficha" id="ficha">
+  <p class="estado" id="estado">Cargando ficha…</p>
+</main>
 
-<script src="../js/config.js?v=5"></script>
-<script>
-// Esta ficha ya no vive en este sitio: ahora es la ficha compartida.
-// Se conserva esta dirección (…/ficha/?id=P0001) para no romper links viejos.
-(function () {
-  var FICHA_BASE = "https://ficha.miraleads.pro/";
-  var id = new URLSearchParams(window.location.search).get("id");
-  var sheet = (typeof CONFIG !== "undefined" && CONFIG.SPREADSHEET_ID) || "";
-  var destino = (id && sheet && sheet.indexOf("PENDIENTE") !== 0)
-    ? FICHA_BASE + "?sheet=" + encodeURIComponent(sheet) + "&id=" + encodeURIComponent(id)
-    : "../";
-  document.getElementById("msg").innerHTML =
-    'Abriendo la ficha… <a href="' + destino.replace(/"/g, "&quot;") + '">Si no abre, haz clic aquí</a>';
-  window.location.replace(destino);
-})();
-</script>
+<div class="visor" id="visor" hidden role="dialog" aria-modal="true" aria-label="Fotos ampliadas">
+  <button type="button" class="visor-btn visor-cerrar" id="visor-cerrar" aria-label="Cerrar">✕</button>
+  <span class="visor-contador" id="visor-contador"></span>
+  <button type="button" class="visor-btn visor-ant" id="visor-ant" aria-label="Foto anterior">‹</button>
+  <img id="visor-img" alt="">
+  <button type="button" class="visor-btn visor-sig" id="visor-sig" aria-label="Foto siguiente">›</button>
+</div>
+
+<script src="../js/config.js?v=6"></script>
+<script src="ficha.js?v=1"></script>
 </body>
 </html>

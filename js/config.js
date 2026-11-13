@@ -1,16 +1,14 @@
 // ─────────────────────────────────────────────────────────────
-// CONFIGURACIÓN — JAVIER OTAYA
+// CONFIGURACIÓN — Javier Otaya · Agente inmobiliario, Sur de Cali
 // Este es el único archivo que se edita para ajustar el sitio.
-// Los valores "PENDIENTE_..." se llenan al terminar la instalación
-// (ver INSTALAR-CLIENTE-NUEVO.md, pasos 5 y 6).
 // ─────────────────────────────────────────────────────────────
 const CONFIG = {
   // ID de la hoja ESPEJO PÚBLICA (la que crea el backend), NO el de la Maestra.
-  // Sale en el correo de salud y al ejecutar LC_diagnostico en Apps Script.
+  // Sale en el correo de salud y al ejecutar LC_diagnostico en Apps Script
+  // (línea "SPREADSHEET_ID para js/config.js del sitio").
   SPREADSHEET_ID: "1IbX4KKEeC2JarWSZxoZKyr9V1p9qSQfLJE0qU2bPF04",
 
-  // API key de Google Cloud, creada en el proyecto de Google Cloud de
-  // DEL CLIENTE (Sheets API habilitada, restringida al dominio del sitio).
+  // API key de Google Cloud (Sheets API habilitada, restringida al dominio del sitio).
   API_KEY: "AIzaSyD9dcqg2slJPnkawSjLnLpEVdhVvmmUGrA",
 
   // Pestaña del espejo que se lee. El backend la deja siempre como la primera.
@@ -27,19 +25,17 @@ const CONFIG = {
   WHATSAPP_NUMBER: "573164854961",
   WHATSAPP_MESSAGE: "Hola, quiero más información sobre los inmuebles disponibles.",
 
-  // URL del despliegue (Web App) de Apps Script de la cuenta del cliente.
-  // Recibe los leads. Termina en /exec.
+  // URL del despliegue (Web App) de Apps Script de la cuenta de Javier. Recibe los leads. Termina en /exec.
   LEADS_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyWf5HNp4cee-XmMLamTEo-PvV1h_fYTew3XVLvx748vNiGDT9Lf4ANH1nDrMlDX-cj/exec",
 
-  // Dirección pública del sitio, con "/" al final. Se usa en los mensajes que
-  // se comparten (por ejemplo "Copiar para WhatsApp" en Solicitudes).
-  BASE_URL: "https://otayajavier.github.io/catalogo/",
+  // Dirección pública del sitio, con "/" al final. Debe ser igual a catalogoUrl en config.gs.
+  BASE_URL: "https://otayajavier.miraleads.pro/",
 
   // Marca
   MARCA_NOMBRE: "Javier Otaya",
   MARCA_FRASE: "Agente inmobiliario · Sur de Cali",
   LOGO_URL: "",          // ej. "img/logo.png" (ruta relativa a la raíz del sitio)
-  FOTO_AGENTE_URL: "img/javier.jpg",   // ej. "img/asesor.jpg"
+  FOTO_AGENTE_URL: "img/javier.jpg",   // ruta relativa a la raíz del sitio
 
   // Datos del asesor para portada y ficha (déjalos vacíos para ocultarlos).
   AGENTE_CARGO: "Asesor inmobiliario",

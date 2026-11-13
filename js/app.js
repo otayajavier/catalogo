@@ -17,11 +17,46 @@ function initMetaPixel() {
   fbq('track', 'PageView');
 }
 
+// ─────────────────────────────────────────────────────────────
+// Google Tag Manager (dataLayer) — misma señal que el Pixel, para Google Ads.
+//   ViewContent → view_item · Lead → generate_lead · Contact → whatsapp_click
+// Nunca debe romper el sitio: todo va en try/catch.
+// ─────────────────────────────────────────────────────────────
+function gtmPush(event, params, eventId) {
+  try {
+    const nombres = { ViewContent: "view_item", Lead: "generate_lead", Contact: "whatsapp_click" };
+    const nombre = nombres[event];
+    if (!nombre) return;
+    window.dataLayer = window.dataLayer || [];
+    const p = params || {};
+    if (nombre === "view_item") {
+      window.dataLayer.push({ ecommerce: null });
+      window.dataLayer.push({
+        event: nombre,
+        ecommerce: {
+          currency: p.currency || "COP",
+          value: p.value || 0,
+          items: [{ item_id: (p.content_ids || [])[0], item_name: p.content_name }],
+        },
+      });
+    } else {
+      window.dataLayer.push({
+        event: nombre,
+        content_name: p.content_name,
+        value: p.value,
+        currency: p.currency,
+        lead_event_id: eventId,
+      });
+    }
+  } catch (e) { /* el tracking nunca rompe el sitio */ }
+}
+
 // Devuelve el ID del evento, para guardarlo junto con el lead en la hoja.
 // Así, cuando el lead se califica, el aviso que sale desde la hoja se puede
 // relacionar con este mismo Lead.
 function trackPixel(event, params) {
   const eventId = generateEventId();
+  gtmPush(event, params, eventId);
   if (typeof fbq === "function") fbq("track", event, params || {}, { eventID: eventId });
   return eventId;
 }
@@ -193,6 +228,12 @@ async function fetchSheetData() {
 // Solo se extraen los campos que la vitrina pública puede mostrar o necesita
 // para funcionar (link e imagen). Origen, Proyecto/Nombre, Comisión,
 // Observaciones, encargado y celular nunca se leen hacia el objeto público.
+// "$ 350.000" / "350000" / "350.000,00" → 350000 (0 si está vacío o no es número).
+function dineroEntero(txt) {
+  const t = String(txt || "").replace(/[.,]\d{1,2}$/, "");
+  return parseInt(t.replace(/\D/g, ""), 10) || 0;
+}
+
 function rowsToPublicListings(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0].map(normalizeHeader);
@@ -202,6 +243,9 @@ function rowsToPublicListings(values) {
     id: headers.findIndex((h) => h === "id"),
     tipo: findCol(headers, "tipo"),
     barrio: findCol(headers, "barrio", "zona"),
+    ciudad: headers.findIndex((h) => h === "ciudad"),
+    administracion: findCol(headers, "administracion", "admon"),
+    ascensor: findCol(headers, "ascensor"),
     precio: headers.findIndex((h) => h.includes("precio") && !h.includes("arriendo")),
     canon: findCol(headers, "canon", "arriendo"),
     area: findCol(headers, "area"),
@@ -240,6 +284,9 @@ function rowsToPublicListings(values) {
           : makeCatalogId(tipo, barrio, row[col.precio], row[col.linkFicha]),
         tipo,
         barrio,
+        ciudad: celda(row, col.ciudad),
+        administracion: dineroEntero(celda(row, col.administracion)),
+        ascensor: /^(si|sí|s|tiene|con)\b/i.test(celda(row, col.ascensor)),
         precio: parseCOP(row[col.precio]),
         canon: parseCOP(row[col.canon]),
         area: parseFloat(row[col.area]) || 0,
@@ -365,6 +412,7 @@ function cardHtml(listing) {
   const badgeText = isArriendo(listing.servicio) && !isVenta(listing.servicio) ? "Arriendo" : (listing.servicio || "Disponible");
   const titulo = `${listing.tipo} en ${listing.barrio}`;
   const credito = creditoBucket(listing.credito);
+  const creditoChip = credito === "si" ? "Aplica crédito" : credito === "no" ? "Solo contado" : "";
 
   const meta = [];
   if (listing.habitaciones) meta.push(cardMeta("bed", `${listing.habitaciones} hab.`));
@@ -376,16 +424,16 @@ function cardHtml(listing) {
   return `
     <article class="card">
       <button type="button" class="card-image-link open-detail" data-id="${escapeAttr(listing.catalogId)}" aria-label="Ver detalle de este inmueble">
-        <img src="${escapeAttr(img)}" alt="${escapeAttr(titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+        <img src="${escapeAttr(img)}" alt="${escapeAttr(titulo)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${PLACEHOLDER_IMG}'">
         <span class="card-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
       </button>
       <div class="card-body">
         <div class="card-top">
           <p class="card-price">${formatCOP(price.amount)}${price.suffix ? `<small>${price.suffix}</small>` : ""}</p>
-          ${credito === "si" ? `<span class="card-credit">Aplica crédito</span>` : ""}
+          ${creditoChip ? `<span class="card-credit">${creditoChip}</span>` : ""}
         </div>
         <h3 class="card-title">${escapeHtml(titulo)}</h3>
-        <p class="card-zona">${ICONS.pin}${escapeHtml(listing.barrio)}</p>
+        <p class="card-zona">${ICONS.pin}${escapeHtml(listing.barrio)}${listing.ciudad ? ", " + escapeHtml(listing.ciudad) : ""}</p>
         <div class="card-meta">${meta.join("")}</div>
         <div class="card-actions">
           <button type="button" class="card-link open-detail" data-id="${escapeAttr(listing.catalogId)}">Ver ficha completa <span aria-hidden="true">→</span></button>
@@ -399,6 +447,8 @@ function cardHtml(listing) {
 // Íconos (línea simple, heredan el color del texto vía currentColor)
 // ─────────────────────────────────────────────────────────────
 const ICONS = {
+  elevator: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m9 10 3-3 3 3M9 14l3 3 3-3"/></svg>`,
+  admin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-5h6v5M9 11h.01M15 11h.01"/></svg>`,
   area: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
   bed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18v2M21 18v2M3 12V8a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v2"/></svg>`,
   bath: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3ZM6 12V6a2 2 0 0 1 2-2c1 0 1.6.6 2 1M3 19h18"/></svg>`,
@@ -545,7 +595,7 @@ function detailHtml(listing) {
         <div class="fi-main">
           <div class="detail-carousel">
             <div class="detail-carousel-track" id="detail-carousel-track">
-              ${carouselPhotos.map((src) => `<img src="${escapeAttr(src)}" alt="${escapeAttr(titulo)}" onerror="this.src='${PLACEHOLDER_IMG}'">`).join("")}
+              ${carouselPhotos.map((src) => `<img src="${escapeAttr(src)}" alt="${escapeAttr(titulo)}" referrerpolicy="no-referrer" onerror="this.src='${PLACEHOLDER_IMG}'">`).join("")}
             </div>
             ${carouselPhotos.length > 1 ? `
               <button type="button" class="carousel-arrow prev" id="carousel-prev" aria-label="Foto anterior">‹</button>
@@ -562,7 +612,7 @@ function detailHtml(listing) {
           </div>
           ${carouselPhotos.length > 1 ? `
             <div class="fi-miniaturas" id="fi-miniaturas">
-              ${carouselPhotos.slice(0, 8).map((src, i) => `<button type="button" data-i="${i}" aria-label="Ver foto ${i + 1}"><img src="${escapeAttr(src)}" alt="" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'"></button>`).join("")}
+              ${carouselPhotos.slice(0, 8).map((src, i) => `<button type="button" data-i="${i}" aria-label="Ver foto ${i + 1}"><img src="${escapeAttr(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${PLACEHOLDER_IMG}'"></button>`).join("")}
             </div>` : ""}
 
           <div class="fi-cabecera">
@@ -572,7 +622,7 @@ function detailHtml(listing) {
               <span class="fi-etq disp">Disponible</span>
             </div>
             <h2 class="detail-title">${escapeHtml(titulo)}</h2>
-            <p class="fi-ubicacion">${ICONS.pin}${escapeHtml(listing.barrio)}, Sur de Cali${listing.id ? ` · Ref. ${escapeHtml(listing.id)}` : ""}</p>
+            <p class="fi-ubicacion">${ICONS.pin}${escapeHtml(listing.barrio)}, ${escapeHtml(listing.ciudad || "Sur de Cali")}${listing.id ? ` · Ref. ${escapeHtml(listing.id)}` : ""}</p>
           </div>
 
           <div class="fi-hechos">
@@ -582,6 +632,8 @@ function detailHtml(listing) {
             ${listing.parqueadero && listing.parqueadero.toLowerCase() !== "no" ? hechoHtml("car", listing.parqueadero, "Parqueadero") : ""}
             ${hechoHtml("layers", listing.piso, isCasa(listing.tipo) ? "Niveles" : "Piso")}
             ${hechoHtml("star", listing.estrato, "Estrato")}
+            ${listing.ascensor ? hechoHtml("elevator", "Sí", "Ascensor") : ""}
+            ${listing.administracion ? hechoHtml("admin", formatCOP(listing.administracion), "Administración") : ""}
           </div>
 
           ${sobre}

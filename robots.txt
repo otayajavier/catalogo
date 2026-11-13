@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://otayajavier.github.io/catalogo/sitemap.xml
+Sitemap: https://otayajavier.miraleads.pro/sitemap.xml

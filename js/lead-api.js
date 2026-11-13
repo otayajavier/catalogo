@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Envío de leads al backend (Apps Script de la cuenta del cliente).
+// Envío de leads al backend (Apps Script de la cuenta de Javier).
 // Lo usan la ficha de inmueble (app.js) y el formulario de /consulta.
 // Depende de datosParaMeta(), definida en app.js y consulta.js: aporta
 // fbc, fbp, página y navegador para que Meta reconozca a la persona.

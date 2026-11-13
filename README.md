@@ -1,56 +1,54 @@
-# Catálogo — Javier Otaya
+# Catálogo — Javier Otaya · Agente inmobiliario, Sur de Cali
 
-Sitio estático (HTML/CSS/JS) para GitHub Pages. Muestra el inventario de
-el cliente, la calculadora de crédito, el tablero de solicitudes y el formulario
-"¿Buscas algo específico?". Los leads se envían al backend de Apps Script que
-corre en la cuenta de Google del cliente.
-
-## Cómo funciona
+Sitio estático (HTML/CSS/JS) para GitHub Pages. Muestra el inventario, la
+calculadora de crédito, el tablero de solicitudes y el formulario
+"¿Buscas algo específico?". Los leads van al backend de Apps Script de la
+cuenta de Javier.
 
 ```
 Visitante ──► Sitio (GitHub Pages) ──lee──► Hoja ESPEJO pública (Google Sheets API)
-                       │
-                       └──envía leads──► Web App de Apps Script (cuenta del cliente)
-                                                  │
-                                                  ├─► hoja MAESTRA privada (Leads, Portafolio)
-                                                  └─► Meta (Conversions API, opcional)
+                   │
+                   └──envía leads──► Web App de Apps Script
+                                         ├─► hoja MAESTRA privada (Leads, Portafolio)
+                                         └─► Meta (Conversions API, plan Full Ads)
 ```
 
 El sitio **nunca** lee la hoja Maestra: solo el espejo, que no trae teléfonos,
-comisiones ni notas privadas.
+comisiones ni notas privadas. El panel de administración vive en
+`panel.miraleads.pro`, no en este repo.
 
 ## Archivos
 
 | Ruta | Para qué |
 |---|---|
 | `js/config.js` | **Único archivo que se edita.** IDs, API key, WhatsApp, marca, colores. |
-| `inicio/` | Página de inicio. |
 | `index.html` + `js/app.js` | Inventario (tarjetas, filtros, ficha emergente). |
-| `solicitudes/` | Tablero público de requerimientos. |
-| `credito/` | Calculadora de crédito hipotecario. |
-| `consulta/` | Formulario "¿Buscas algo específico?". |
-| `js/lead-api.js` | Envío de leads al Web App de Apps Script. |
+| `js/lead-api.js` | Envío de leads al Web App (acción `guardarLead`, con el `eventId` del Pixel). |
+| `js/nav.js` | Menú; calcula las rutas solo, funciona en una subcarpeta o en un dominio propio. |
+| `ficha/` | Ficha técnica neutra para colegas. |
+| `inicio/`, `solicitudes/`, `credito/`, `consulta/` | Páginas del sitio. |
 
 ## Configuración (`js/config.js`)
 
 | Campo | Qué poner |
 |---|---|
-| `SPREADSHEET_ID` | ID del **espejo** (sale en `LC_diagnostico`). |
-| `API_KEY` | API key de Google Cloud del cliente (Sheets API, restringida al dominio del sitio). |
+| `SPREADSHEET_ID` | ID del **espejo** (sale en `LC_diagnostico`). NO el de la Maestra. |
+| `API_KEY` | API key de Google Cloud (Sheets API, restringida al dominio del sitio). |
 | `LEADS_WEBAPP_URL` | URL del Web App (termina en `/exec`). |
-| `BASE_URL` | Dirección pública del sitio, con `/` al final. |
+| `BASE_URL` | Dirección pública del sitio, con `/` al final. Igual a `catalogoUrl` en `config.gs`. |
 | `WHATSAPP_NUMBER` | Código de país + número, sin `+`. |
 | `META_PIXEL_ID` | Vacío = sin Pixel. |
-| `MARCA_*`, `LOGO_URL`, `COLOR_*` | Marca y colores. |
+| `MARCA_*`, `LOGO_URL`, `COLOR_*` | Marca y colores (vacío = colores originales). |
 
-La guía completa de instalación está en `INSTALAR-CLIENTE-NUEVO.md`.
+## Probar en el computador
+
+```bash
+python3 -m http.server 8080
+```
+
+Abre `http://localhost:8080`.
 
 ## Qué se publica del inventario
 
 Solo inmuebles con Estado "Disponible". Las observaciones públicas se limpian
-de teléfonos y correos al copiarlas al espejo. Notas privadas, documentos,
-comisión, encargado y celular **no** salen de la Maestra.
-
-## Ficha para colegas
-
-No vive en este sitio: es la ficha compartida `https://ficha.miraleads.pro/?sheet=<ID_DEL_ESPEJO>&id=P0001`, que arma el Panel.
+de teléfonos y correos al copiarlas al espejo.
