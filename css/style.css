@@ -177,6 +177,7 @@ body {
   min-width: 220px;
 }
 .pill-popover[hidden] { display: none; }
+.pill-select[hidden] { display: none; }
 
 .filter-group-label {
   font-size: 12px;

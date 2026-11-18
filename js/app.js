@@ -1249,7 +1249,7 @@ let allListings = [];
 let todosLosInmuebles = []; // incluye vendidos/arrendados (para enlaces viejos)
 let filtersInitialized = false;
 let filterState = {
-  search: "", tipo: "", parqueadero: "", servicio: "", credito: "",
+  search: "", tipo: "", ciudad: "", parqueadero: "", servicio: "", credito: "",
   precioMin: null, precioMax: null,
   pisoMin: null, pisoMax: null,
   habMin: null,
@@ -1269,6 +1269,8 @@ function getRandomWeight(l) {
   return randomWeights.get(key);
 }
 
+const ciudadKey = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
 function fillSelect(id, values, placeholder) {
   const el = document.getElementById(id);
   const current = el.value;
@@ -1278,6 +1280,13 @@ function fillSelect(id, values, placeholder) {
 
 function populateFilters(listings) {
   fillSelect("f-tipo", [...new Set(listings.map((l) => l.tipo))].sort(), "Todos los tipos");
+  // Ciudad: una opción por ciudad (sin distinguir mayúsculas ni tildes). Con una sola
+  // ciudad el filtro no aporta nada, así que el botón se oculta hasta que haya 2 o más.
+  const ciudadesMap = new Map();
+  listings.forEach((l) => { const k = ciudadKey(l.ciudad); if (k && !ciudadesMap.has(k)) ciudadesMap.set(k, String(l.ciudad).trim()); });
+  const ciudades = [...ciudadesMap.values()].sort((a, b) => a.localeCompare(b, "es"));
+  fillSelect("f-ciudad", ciudades, "Todas las ciudades");
+  document.getElementById("f-ciudad").hidden = ciudades.length < 2;
   fillSelect("f-parqueadero", [...new Set(listings.map((l) => l.parqueadero).filter(Boolean))].sort(), "Cualquier parqueadero");
 }
 
@@ -1299,7 +1308,7 @@ function matchesPisoRange(listing) {
 
 function matchesSearch(listing) {
   if (!filterState.search) return true;
-  const haystack = `${listing.tipo} ${listing.barrio} ${listing.parqueadero} ${listing.servicio} ${listing.estado}`.toLowerCase();
+  const haystack = `${listing.tipo} ${listing.barrio} ${listing.ciudad || ""} ${listing.parqueadero} ${listing.servicio} ${listing.estado}`.toLowerCase();
   return haystack.includes(filterState.search.toLowerCase());
 }
 
@@ -1307,6 +1316,7 @@ function applyFilters(listings) {
   return listings.filter((l) => {
     if (!matchesSearch(l)) return false;
     if (filterState.tipo && l.tipo !== filterState.tipo) return false;
+    if (filterState.ciudad && ciudadKey(l.ciudad) !== ciudadKey(filterState.ciudad)) return false;
     if (filterState.parqueadero && l.parqueadero !== filterState.parqueadero) return false;
     if (filterState.credito && creditoBucket(l.credito) !== filterState.credito) return false;
     if (filterState.servicio === "venta" && !isVenta(l.servicio)) return false;
@@ -1372,6 +1382,7 @@ function readFiltersFromURL() {
   const p = new URLSearchParams(window.location.search);
   filterState.search = p.get("q") || "";
   filterState.tipo = p.get("tipo") || "";
+  filterState.ciudad = p.get("ciudad") || "";
   filterState.parqueadero = p.get("parqueadero") || "";
   filterState.credito = p.get("credito") || "";
   filterState.servicio = p.get("servicio") || "";
@@ -1387,6 +1398,7 @@ function updateURL() {
   const p = new URLSearchParams();
   if (filterState.search) p.set("q", filterState.search);
   if (filterState.tipo) p.set("tipo", filterState.tipo);
+  if (filterState.ciudad) p.set("ciudad", filterState.ciudad);
   if (filterState.parqueadero) p.set("parqueadero", filterState.parqueadero);
   if (filterState.credito) p.set("credito", filterState.credito);
   if (filterState.servicio) p.set("servicio", filterState.servicio);
@@ -1405,6 +1417,7 @@ function updateURL() {
 function syncControlsFromState() {
   document.getElementById("f-search").value = filterState.search;
   document.getElementById("f-tipo").value = filterState.tipo;
+  document.getElementById("f-ciudad").value = filterState.ciudad;
   document.getElementById("f-parqueadero").value = filterState.parqueadero;
   document.getElementById("f-credito").value = filterState.credito;
   document.getElementById("f-servicio").value = filterState.servicio;
@@ -1420,7 +1433,7 @@ function syncControlsFromState() {
 // Resalta cada "pill" cuando tiene un filtro aplicado, y actualiza el
 // texto de los pills de Precio/Piso para reflejar el rango elegido.
 function updatePillStates() {
-  ["f-tipo", "f-parqueadero", "f-credito", "f-servicio", "f-hab"].forEach((id) => {
+  ["f-tipo", "f-ciudad", "f-parqueadero", "f-credito", "f-servicio", "f-hab"].forEach((id) => {
     const el = document.getElementById(id);
     el.classList.toggle("pill-active", el.value !== "");
   });
@@ -1474,6 +1487,7 @@ function onFilterChange() {
 function wireFilters() {
   document.getElementById("f-search").addEventListener("input", (e) => { filterState.search = e.target.value; onFilterChange(); });
   document.getElementById("f-tipo").addEventListener("change", (e) => { filterState.tipo = e.target.value; onFilterChange(); });
+  document.getElementById("f-ciudad").addEventListener("change", (e) => { filterState.ciudad = e.target.value; onFilterChange(); });
   document.getElementById("f-parqueadero").addEventListener("change", (e) => { filterState.parqueadero = e.target.value; onFilterChange(); });
   document.getElementById("f-credito").addEventListener("change", (e) => { filterState.credito = e.target.value; onFilterChange(); });
   document.getElementById("f-servicio").addEventListener("change", (e) => { filterState.servicio = e.target.value; onFilterChange(); });
@@ -1497,7 +1511,7 @@ function wireFilters() {
   });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
-    filterState = { search: "", tipo: "", parqueadero: "", credito: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, habMin: null, sort: "random" };
+    filterState = { search: "", tipo: "", ciudad: "", parqueadero: "", credito: "", servicio: "", precioMin: null, precioMax: null, pisoMin: null, pisoMax: null, habMin: null, sort: "random" };
     syncControlsFromState();
     onFilterChange();
   });
