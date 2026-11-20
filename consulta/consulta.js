@@ -57,8 +57,27 @@ function leerCookie(nombre) {
 
 function guardarClicAnuncio() {
   try {
-    const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+    const q = new URLSearchParams(window.location.search);
+    const fbclid = q.get("fbclid");
     if (fbclid) localStorage.setItem("fbclid_info", JSON.stringify({ id: fbclid, ts: Date.now() }));
+
+    // Fuente del último anuncio que trajo a la persona (Google Ads, Meta u otra).
+    // Google agrega "gclid" solo; "utm_*" vienen del sufijo de URL final de la campaña.
+    const gclid = q.get("gclid") || q.get("gbraid") || q.get("wbraid") || "";
+    const utmSource = (q.get("utm_source") || "").toLowerCase();
+    let fuente = "";
+    if (gclid || utmSource === "google") fuente = "Google Ads";
+    else if (fbclid || /^(fb|facebook|ig|instagram|meta)$/.test(utmSource)) fuente = "Meta Ads";
+    else if (utmSource) fuente = utmSource.slice(0, 40);
+    if (fuente) {
+      localStorage.setItem("origen_info", JSON.stringify({
+        fuente,
+        gclid: gclid.slice(0, 200),
+        campana: (q.get("utm_campaign") || "").slice(0, 80),
+        termino: (q.get("utm_term") || "").slice(0, 80),
+        ts: Date.now(),
+      }));
+    }
   } catch (e) { /* sin almacenamiento: no pasa nada */ }
 }
 
@@ -70,9 +89,19 @@ function datosParaMeta() {
       if (info && info.id && Date.now() - info.ts < 90 * 24 * 3600 * 1000) fbc = `fb.1.${info.ts}.${info.id}`;
     } catch (e) { /* ignorar */ }
   }
+  // Fuente del anuncio (Google/Meta) guardada al entrar; vence a los 90 días.
+  let origen = {};
+  try {
+    const o = JSON.parse(localStorage.getItem("origen_info") || "null");
+    if (o && Date.now() - o.ts < 90 * 24 * 3600 * 1000) origen = o;
+  } catch (e) { /* ignorar */ }
   return {
     fbc,
     fbp: leerCookie("_fbp"),
+    fuente: origen.fuente || "",
+    gclid: origen.gclid || "",
+    campana: origen.campana || "",
+    termino: origen.termino || "",
     pagina: window.location.href.slice(0, 500),
     navegador: navigator.userAgent,
   };
